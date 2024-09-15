@@ -30,6 +30,7 @@ class Solution {
   private:
     // TODO:
     void RecalculateCost();
+    bool CorrectCost(size_t old);
 
     const Instance &m_instance;
     std::vector<Vertex> m_sequence;

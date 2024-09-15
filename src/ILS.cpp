@@ -12,51 +12,43 @@ using std::list;
 using std::size_t;
 using std::vector;
 
-using it_vec = std::pair<Vertex&, list<Vertex>::iterator>;
+using pair_vertex_it = std::pair<Vertex &, list<Vertex>::iterator>;
 
-auto ChooseBestVertex(list<Vertex> &CL, const Vertex &before, const Instance &instance) {
-
+[[nodiscard]] Vertex ChooseBestVertex(vector<Vertex> &CL, const Vertex &before, const Instance &instance) {
     for (auto &vertex : CL) {
-
         instance.CalculateVertex(vertex, before);
     }
 
-    auto teste = [instance](const it_vec &first, const it_vec &second) {
-        const auto &first_order = first.first;
-        const auto &second_order = second.first;
-        return first_order.penalty > second_order.penalty || instance.deadline(first_order) < instance.deadline(second_order);
+    // Decresent order, the last will be the best one
+    auto criteria = [instance](const Vertex &first, const Vertex &second) {
+        return first.penalty < second.penalty ||
+               instance.deadline(first) > instance.deadline(second);
     };
 
-    vector<std::pair<Vertex&, list<Vertex>::iterator>> vec;
-    vec.reserve(CL.size());
-    for (auto it = CL.begin(); it != CL.end(); it++) {
-        vec.emplace_back(*it, it);
-    }
-    std::sort(vec.begin(), vec.end(), teste);
+    std::sort(CL.begin(), CL.end(), criteria);
 
-    return vec.front().second;
+    Vertex best = CL.back();
+    CL.pop_back();
+    return best;
 }
 
 Solution Construction(const Instance &instance) {
-
     vector<Vertex> sequence;
     size_t cost = 0;
 
-    list<Vertex> CL;
+    vector<Vertex> CL;
     for (size_t i = 0; i < instance.size(); i++) {
         CL.emplace_back(i, 0, 0);
     }
 
     // TODO: aleatorio
     sequence.emplace_back(CL.front());
-    CL.pop_front();
+    CL.erase(CL.begin());
     cost = instance.CalculateVertex(sequence.back());
 
     while (!CL.empty()) {
-        auto it = ChooseBestVertex(CL, sequence.back(), instance);
-        sequence.emplace_back(*it);
-        cost += it->penalty;
-        CL.erase(it);
+        sequence.emplace_back(ChooseBestVertex(CL, sequence.back(), instance));
+        cost += sequence.back().penalty;
     }
 
     return {std::move(sequence), cost, instance};
