@@ -1,4 +1,5 @@
 #include "Instance.h"
+#include "Solution.h"
 
 #include <cstddef>
 #include <cstdio>
@@ -19,5 +20,7 @@ int main(int argc, char *argv[]) {
 
     const Instance instance(args.front());
 
-    std::cout << "Teste\n";
+    const Solution teste({0, 1, 2, 3, 4}, instance);
+
+    std::cout << teste.cost() << '\n';
 }

@@ -64,21 +64,24 @@ Instance::Instance(const std::filesystem::path &filename) {
     m_instance_size = std::stoi(line);
 
     // The order matters
-    const vector<std::reference_wrapper<vector<size_t>>> vecs = {m_process_times, m_weights, m_deadlines};
+    const vector<std::reference_wrapper<vector<size_t>>> vecs = {m_process_times, m_deadlines, m_weights};
 
     for (auto vec : vecs) {
         GetNextLine(file, line);
         SetVector(line, vec);
     }
 
+    // Create a line of 0's for indexing with -1
+    m_setup_times.reserve(m_instance_size + 1);
+    m_setup_times.emplace_back(m_instance_size, 0);
+
     // Read setup times
-    m_setup_times.reserve(m_instance_size);
     while (GetNextLine(file, line)) {
         m_setup_times.emplace_back();
         SetVector(line, m_setup_times.back());
     }
 
-    if (m_setup_times.size() != m_instance_size) {
+    if (m_setup_times.size() != m_instance_size + 1) {
         throw std::runtime_error("Failed to correctly set a setup times");
     }
 }

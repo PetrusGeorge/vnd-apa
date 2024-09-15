@@ -1,9 +1,9 @@
 #ifndef ILS_H
 #define ILS_H
 
-#include "Solution.h"
 #include "Instance.h"
+#include "Solution.h"
 
-Solution ILS(int max_iter, int max, const Instance& instance);
+Solution ILS(int max_iter, int max_iter_ils, const Instance &instance);
 
-#endif 
+#endif

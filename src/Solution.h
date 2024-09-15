@@ -4,6 +4,7 @@
 #include "Instance.h"
 
 #include <cassert>
+#include <cstddef>
 #include <limits>
 #include <vector>
 
