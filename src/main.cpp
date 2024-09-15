@@ -1,5 +1,7 @@
 #include "Instance.h"
+
 #include <cstddef>
+#include <cstdio>
 #include <iostream>
 #include <string_view>
 #include <vector>
@@ -10,7 +12,7 @@ int main(int argc, char *argv[]) {
 
     std::vector<std::string_view> args{argv + 1, argv + argc};
 
-    if(args.size() != 1){
+    if (args.size() != 1) {
         std::cerr << "Usage: ./path/to/bin /path/to/instance\n";
         return 1;
     }

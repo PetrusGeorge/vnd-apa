@@ -20,7 +20,7 @@
           ninja
 
           (clang-tools.override {enableLibcxx = true;})
-          lldb
+          ccache
           llvmPackages.libcxxClang
           llvmPackages.libcxx
           mold
@@ -29,12 +29,14 @@
         buildInputs = with pkgs; [
           cppcheck
           just
+
+          lldb
         ];
 
         LD_LIBRARY_PATH = nixpkgs.lib.strings.makeLibraryPath [pkgs.llvmPackages.libcxx];
 
         shellHook = ''
-          export CXX=clang++
+          export CXX='ccache clang++'
           export CXX_LD=mold
         '';
       };
