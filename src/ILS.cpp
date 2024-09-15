@@ -37,6 +37,7 @@ Solution Construction(const Instance &instance) {
     size_t cost = 0;
 
     vector<Vertex> CL;
+    CL.reserve(instance.size());
     for (size_t i = 0; i < instance.size(); i++) {
         CL.emplace_back(i, 0, 0);
     }

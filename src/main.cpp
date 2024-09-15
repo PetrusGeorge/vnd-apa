@@ -23,8 +23,5 @@ int main(int argc, char *argv[]) {
 
     Solution teste = ILS(50, 150, instance);
 
-    std::cout << teste.cost() << '\n';
-    for(auto order : teste.sequence){
-        std::cout << order.id << ' ';
-    }std::cout << '\n';
+    std::cout << teste << '\n';
 }

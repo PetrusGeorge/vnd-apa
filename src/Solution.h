@@ -26,6 +26,7 @@ class Solution {
 
     // NOTE: read only access to private member
     const std::vector<Vertex> &sequence = m_sequence;
+    friend std::ostream& operator<<(std::ostream& os, const Solution& sol);
 
   private:
     // TODO:
@@ -36,5 +37,6 @@ class Solution {
     std::vector<Vertex> m_sequence;
     std::size_t m_cost = std::numeric_limits<std::size_t>::max();
 };
+
 
 #endif
