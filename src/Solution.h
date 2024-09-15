@@ -15,8 +15,8 @@ class Solution {
     // inline Solution(const std::vector<std::size_t> &sequence, const Instance &instance);
     // inline Solution(const std::vector<std::size_t> &sequence, std::size_t cost, const Instance &instance);
 
-    Solution(std::vector<std::size_t> &&sequence, const Instance &instance);
-    Solution(std::vector<std::size_t> &&sequence, std::size_t cost, const Instance &instance);
+    Solution(std::vector<Vertex> &&sequence, const Instance &instance);
+    Solution(std::vector<Vertex> &&sequence, std::size_t cost, const Instance &instance);
 
     [[nodiscard]] inline std::size_t cost() const { return m_cost; }
 
@@ -25,14 +25,14 @@ class Solution {
     void ApplyReinsertion();
 
     // NOTE: read only access to private member
-    const std::vector<std::size_t> &sequence = m_sequence;
+    const std::vector<Vertex> &sequence = m_sequence;
 
   private:
     // TODO:
     void RecalculateCost();
 
     const Instance &m_instance;
-    std::vector<std::size_t> m_sequence;
+    std::vector<Vertex> m_sequence;
     std::size_t m_cost = std::numeric_limits<std::size_t>::max();
 };
 

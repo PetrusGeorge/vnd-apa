@@ -1,4 +1,5 @@
 #include "Instance.h"
+#include "ILS.h"
 #include "Solution.h"
 
 #include <cstddef>
@@ -20,7 +21,10 @@ int main(int argc, char *argv[]) {
 
     const Instance instance(args.front());
 
-    const Solution teste({0, 1, 2, 3, 4}, instance);
+    Solution teste = ILS(50, 150, instance);
 
     std::cout << teste.cost() << '\n';
+    for(auto order : teste.sequence){
+        std::cout << order.id << ' ';
+    }std::cout << '\n';
 }

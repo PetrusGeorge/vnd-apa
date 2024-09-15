@@ -6,27 +6,40 @@
 #include <string>
 #include <vector>
 
+struct Vertex {
+    long id;
+    std::size_t finish_time;
+    std::size_t penalty;
+};
+
 class Instance {
 
   public:
     explicit Instance(const std::filesystem::path &filename);
 
-    [[nodiscard]] inline std::size_t setup_time(std::size_t id, std::size_t id_behind) const {
-        return m_setup_times[id_behind + 1][id];
+    [[nodiscard]] inline std::size_t setup_time(const Vertex &order, const Vertex order_behind) const {
+        return m_setup_times[order_behind.id + 1][order.id];
     }
-    [[nodiscard]] inline std::size_t process_time(std::size_t id) const { return m_process_times[id]; }
-    [[nodiscard]] inline std::size_t deadline(std::size_t id) const { return m_deadlines[id]; }
-    [[nodiscard]] inline std::size_t weight(std::size_t id) const { return m_weights[id]; }
+    [[nodiscard]] inline std::size_t process_time(const Vertex &order) const { return m_process_times[order.id]; }
+    [[nodiscard]] inline std::size_t deadline(const Vertex &order) const { return m_deadlines[order.id]; }
+    [[nodiscard]] inline std::size_t weight(const Vertex &order) const { return m_weights[order.id]; }
 
-    [[nodiscard]] inline std::size_t AddedTime(std::size_t id, std::size_t id_behind) const {
-        return setup_time(id, id_behind) + process_time(id);
+    inline void AddedTime(Vertex &order, const Vertex &order_behind = {-1, 0, 0}) const {
+        order.finish_time = setup_time(order, order_behind) + process_time(order) + order_behind.finish_time;
     }
-    [[nodiscard]] inline std::size_t Penalty(std::size_t id, std::size_t finish_time) const {
-        if (finish_time < deadline(id)) {
+    [[nodiscard]] inline std::size_t Penalty(Vertex &order) const {
+        if (order.finish_time < deadline(order)) {
             return 0;
         }
-        return (finish_time - deadline(id)) * weight(id);
+
+        order.penalty = (order.finish_time - deadline(order)) * weight(order);
+
+        return order.penalty;
     }
+
+    size_t CalculateVertex(Vertex &order, const Vertex &order_behind = {-1, 0, 0}) const;
+
+    [[nodiscard]] inline std::size_t size() const { return m_instance_size; }
 
   private:
     void SetVector(const std::string &line, std::vector<std::size_t> &fill_vector) const;

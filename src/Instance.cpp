@@ -85,3 +85,9 @@ Instance::Instance(const std::filesystem::path &filename) {
         throw std::runtime_error("Failed to correctly set a setup times");
     }
 }
+
+size_t Instance::CalculateVertex(Vertex& order, const Vertex& order_behind) const {
+
+    AddedTime(order, order_behind);
+    return Penalty(order);
+}
