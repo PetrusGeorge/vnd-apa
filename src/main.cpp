@@ -7,6 +7,7 @@
 #include <iostream>
 #include <string_view>
 #include <vector>
+#include <list>
 
 using std::size_t;
 

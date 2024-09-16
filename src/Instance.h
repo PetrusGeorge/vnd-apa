@@ -11,9 +11,7 @@ struct Vertex {
     std::size_t finish_time;
     std::size_t penalty;
 
-    static Vertex Departure(){
-        return {-1,0,0};
-    }
+    static Vertex Departure() { return {-1, 0, 0}; }
 };
 
 class Instance {
@@ -28,17 +26,16 @@ class Instance {
     [[nodiscard]] inline std::size_t deadline(const Vertex &order) const { return m_deadlines[order.id]; }
     [[nodiscard]] inline std::size_t weight(const Vertex &order) const { return m_weights[order.id]; }
 
-    inline void AddedTime(Vertex &order, const Vertex &order_behind = Vertex::Departure()) const {
-        order.finish_time = setup_time(order, order_behind) + process_time(order) + order_behind.finish_time;
+    [[nodiscard]] inline std::size_t AddedTime(const Vertex &order,
+                                               const Vertex &order_behind = Vertex::Departure()) const {
+        return setup_time(order, order_behind) + process_time(order) + order_behind.finish_time;
     }
-    [[nodiscard]] inline std::size_t Penalty(Vertex &order) const {
+    [[nodiscard]] inline std::size_t Penalty(const Vertex &order) const {
         if (order.finish_time < deadline(order)) {
             return 0;
         }
 
-        order.penalty = (order.finish_time - deadline(order)) * weight(order);
-
-        return order.penalty;
+        return (order.finish_time - deadline(order)) * weight(order);
     }
 
     size_t CalculateVertex(Vertex &order, const Vertex &order_behind = Vertex::Departure()) const;

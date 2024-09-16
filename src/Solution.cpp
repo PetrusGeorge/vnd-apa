@@ -35,6 +35,28 @@ std::ostream &operator<<(std::ostream &os, const Solution &sol) {
     return os;
 }
 
+Solution::Solution(const Instance &instance) : m_instance(instance) {}
+
+Solution::Solution(const Solution &other)
+    : m_instance(other.m_instance), m_sequence(other.m_sequence), m_cost(other.m_cost) {}
+
+Solution::Solution(Solution &&other) noexcept
+    : m_instance(other.m_instance), m_sequence(std::move(other.m_sequence)), m_cost(other.m_cost) {}
+
+Solution &Solution::operator=(const Solution &other) {
+    m_sequence = other.m_sequence;
+    m_cost = other.m_cost;
+
+    return *this;
+}
+
+Solution &Solution::operator=(Solution &&other) noexcept {
+    m_sequence = std::move(other.m_sequence);
+    m_cost = other.m_cost;
+
+    return *this;
+}
+
 bool Solution::CorrectCost(size_t old) {
 
     RecalculateCost();
@@ -59,8 +81,10 @@ Solution::Solution(vector<Vertex> &&sequence, size_t cost, const Instance &insta
 }
 
 // TODO:
-void Solution::ApplySwap() {}
-void Solution::ApplyReinsertion() {}
+void Solution::ApplySwap(size_t i, size_t j) {}
+void Solution::ApplyReinsertion(size_t i, size_t j) {}
+//
+// inline size_t Solution::eval() {}
 
 void Solution::RecalculateCost() {
     m_cost = 0;

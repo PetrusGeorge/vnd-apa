@@ -1,6 +1,7 @@
 sources = files(
-  'Instance.cpp',
-  'main.cpp',
-  'Solution.cpp',
   'ILS.cpp',
+  'Instance.cpp',
+  'LocalSearch.cpp',
+  'Solution.cpp',
+  'main.cpp',
 )
