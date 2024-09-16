@@ -1,5 +1,5 @@
-#include "Instance.h"
 #include "ILS.h"
+#include "Instance.h"
 #include "Solution.h"
 
 #include <cstddef>
@@ -14,14 +14,14 @@ int main(int argc, char *argv[]) {
 
     std::vector<std::string_view> args{argv + 1, argv + argc};
 
-    if (args.size() != 1) {
-        std::cerr << "Usage: ./path/to/bin /path/to/instance\n";
+    if (args.empty() || args.size() > 2) {
+        std::cerr << "Usage: ./path/to/bin /path/to/instance optional:<seed>\n";
         return 1;
     }
 
     const Instance instance(args.front());
 
-    Solution teste = ILS(50, 150, instance);
+    const Solution teste = ILS(50, 150, instance);
 
     std::cout << teste << '\n';
 }

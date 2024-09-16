@@ -3,6 +3,7 @@
 
 #include <cassert>
 #include <cstddef>
+#include <iomanip>
 #include <iostream>
 #include <utility>
 
@@ -16,18 +17,18 @@ std::ostream &operator<<(std::ostream &os, const Solution &sol) {
 
     // Header
     os << std::left;
-    os << std::setw(id_width) << "ID" << std::setw(finish_time_width) << "Finish Time"
-              << std::setw(penalty_width) << "Penalty" << '\n';
+    os << std::setw(id_width) << "ID" << std::setw(finish_time_width) << "Finish Time" << std::setw(penalty_width)
+       << "Penalty" << '\n';
 
     // Line
     os << std::setw(id_width) << std::setfill('-') << "" << std::setw(finish_time_width) << ""
-              << std::setw(penalty_width) << "" << '\n';
+       << std::setw(penalty_width) << "" << '\n';
     os << std::setfill(' ');
 
     // Rows
     for (const auto &order : sol.sequence) {
         os << std::setw(id_width) << order.id << std::setw(finish_time_width) << order.finish_time
-                  << std::setw(penalty_width) << order.penalty << '\n';
+           << std::setw(penalty_width) << order.penalty << '\n';
     }
 
     os << "\nFinal cost: " << sol.cost() << '\n';
@@ -37,7 +38,7 @@ std::ostream &operator<<(std::ostream &os, const Solution &sol) {
 bool Solution::CorrectCost(size_t old) {
 
     RecalculateCost();
-    bool check = old == m_cost;
+    const bool check = old == m_cost;
 
     if (!check) {
         std::cerr << "Cost should be: " << m_cost << ", but received: " << old << '\n';

@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <list>
+#include <utility>
 
 using std::list;
 using std::size_t;
@@ -21,8 +22,7 @@ using pair_vertex_it = std::pair<Vertex &, list<Vertex>::iterator>;
 
     // Decresent order, the last will be the best one
     auto criteria = [instance](const Vertex &first, const Vertex &second) {
-        return first.penalty < second.penalty ||
-               instance.deadline(first) > instance.deadline(second);
+        return first.penalty < second.penalty || instance.deadline(first) > instance.deadline(second);
     };
 
     std::sort(CL.begin(), CL.end(), criteria);
@@ -55,4 +55,4 @@ Solution Construction(const Instance &instance) {
     return {std::move(sequence), cost, instance};
 }
 
-Solution ILS(int max_iter, int max_iter_ils, const Instance &instance) { return Construction(instance); }
+Solution ILS(int /*max_iter*/, int /*max_iter_ils*/, const Instance &instance) { return Construction(instance); }

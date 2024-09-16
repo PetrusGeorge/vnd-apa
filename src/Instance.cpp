@@ -86,7 +86,7 @@ Instance::Instance(const std::filesystem::path &filename) {
     }
 }
 
-size_t Instance::CalculateVertex(Vertex& order, const Vertex& order_behind) const {
+size_t Instance::CalculateVertex(Vertex &order, const Vertex &order_behind) const {
 
     AddedTime(order, order_behind);
     return Penalty(order);

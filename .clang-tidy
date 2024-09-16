@@ -6,6 +6,7 @@ Checks: 'clang-analyzer-*,
         misc-*,
         google-readability-casting,
         google-build-using-namespace,
+
         -misc-no-recursion,
         -modernize-use-trailing-return-type,
         -cppcoreguidelines-avoid-magic-numbers,
