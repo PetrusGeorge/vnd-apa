@@ -86,9 +86,20 @@ Instance::Instance(const std::filesystem::path &filename) {
     }
 }
 
+size_t Instance::EvalVertex(const Vertex &order, const Vertex &order_behind, long shift) const {
+
+    size_t finish_time = setup_time(order, order_behind) + process_time(order) + order_behind.finish_time + shift;
+
+    if (finish_time < deadline(order)) {
+        return 0;
+    }
+
+    return (finish_time - deadline(order)) * weight(order);
+}
+
 size_t Instance::CalculateVertex(Vertex &order, const Vertex &order_behind) const {
 
     order.finish_time = AddedTime(order, order_behind);
-    order.penalty = order.penalty;
+    order.penalty = Penalty(order);
     return order.penalty;
 }

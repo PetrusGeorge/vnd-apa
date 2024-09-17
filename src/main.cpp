@@ -5,9 +5,9 @@
 #include <cstddef>
 #include <cstdio>
 #include <iostream>
+#include <list>
 #include <string_view>
 #include <vector>
-#include <list>
 
 using std::size_t;
 

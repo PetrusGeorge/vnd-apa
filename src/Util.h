@@ -7,7 +7,7 @@
 #include <stdexcept>
 
 namespace parameters {
-    constexpr double R_MAX = 0.25;
+constexpr double R_MAX = 0.25;
 }
 
 namespace my_rand {
@@ -16,14 +16,12 @@ inline thread_local std::mt19937 gen(std::random_device{}()); // NOLINT
 
 inline void set_seed(std::size_t seed) { gen.seed(seed); }
 
-template <typename IntType>
-IntType rand_int(IntType begin, IntType end) {
+template <typename IntType> IntType rand_int(IntType begin, IntType end) {
     std::uniform_int_distribution<> dis(begin, end);
     return dis(gen);
 }
 
-template <typename Iterator>
-Iterator choose_random_value(Iterator begin, Iterator end) {
+template <typename Iterator> Iterator choose_random_value(Iterator begin, Iterator end) {
     if (begin == end) {
         throw std::invalid_argument("Range is empty");
     }

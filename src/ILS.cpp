@@ -1,11 +1,12 @@
 #include "ILS.h"
 #include "Instance.h"
+#include "LocalSearch.h"
 #include "Solution.h"
 #include "Util.h"
-#include "LocalSearch.h"
 
 #include <algorithm>
 #include <cstddef>
+#include <iostream>
 #include <utility>
 
 using std::size_t;
@@ -45,8 +46,7 @@ Solution Construction(const Instance &instance) {
         CL.emplace_back(i, 0, 0);
     }
 
-    sequence.emplace_back(ChooseBestVertex(CL, Vertex::Departure(), instance));
-    cost += sequence.back().penalty;
+    sequence.emplace_back(Vertex::Departure());
     while (!CL.empty()) {
         sequence.emplace_back(ChooseBestVertex(CL, sequence.back(), instance));
         cost += sequence.back().penalty;
@@ -54,7 +54,6 @@ Solution Construction(const Instance &instance) {
 
     return {std::move(sequence), cost, instance};
 }
-
 
 Solution ILS(int max_iter, int max_iter_ils, const Instance &instance) {
 
@@ -65,14 +64,14 @@ Solution ILS(int max_iter, int max_iter_ils, const Instance &instance) {
         Solution s = Construction(instance);
 
         for (int iter_ils = 0; iter_ils < max_iter_ils; iter_ils++) {
-            LocalSearch(s);
+            LocalSearch(s, instance);
 
             if (s.cost() < best.cost()) {
                 best = s;
                 iter_ils = -1;
             }
 
-            Pertubation(s);
+            s = Pertubation(best, instance);
         }
         if (best.cost() < best_of_all.cost()) {
             best_of_all = std::move(best);

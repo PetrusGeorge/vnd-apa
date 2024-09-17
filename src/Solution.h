@@ -12,13 +12,12 @@
 class Solution {
 
   public:
-    Solution(const Instance& instance);
+    Solution(const Instance &instance);
     Solution(Solution &&) noexcept;
     Solution &operator=(const Solution &);
     Solution &operator=(Solution &&) noexcept;
     Solution(const Solution &other);
     ~Solution() = default;
-
 
     Solution(std::vector<Vertex> &&sequence, const Instance &instance);
     Solution(std::vector<Vertex> &&sequence, std::size_t cost, const Instance &instance);
@@ -31,11 +30,11 @@ class Solution {
 
     // NOTE: read only access to private member
     const std::vector<Vertex> &sequence = m_sequence;
+    std::size_t CorrectCost();
 
   private:
     // TODO:
     void RecalculateCost();
-    bool CorrectCost(size_t old);
 
     const Instance &m_instance;
     std::vector<Vertex> m_sequence;
