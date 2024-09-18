@@ -71,9 +71,7 @@ Instance::Instance(const std::filesystem::path &filename) {
         SetVector(line, vec);
     }
 
-    // Create a line of 0's for indexing with -1
     m_setup_times.reserve(m_instance_size + 1);
-    m_setup_times.emplace_back(m_instance_size, 0);
 
     // Read setup times
     while (GetNextLine(file, line)) {
@@ -88,7 +86,7 @@ Instance::Instance(const std::filesystem::path &filename) {
 
 size_t Instance::EvalVertex(const Vertex &order, const Vertex &order_behind, long shift) const {
 
-    size_t finish_time = setup_time(order, order_behind) + process_time(order) + order_behind.finish_time + shift;
+    const size_t finish_time = setup_time(order, order_behind) + process_time(order) + order_behind.finish_time + shift;
 
     if (finish_time < deadline(order)) {
         return 0;

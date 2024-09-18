@@ -2,10 +2,10 @@
 #include "Instance.h"
 
 #include <cassert>
-#include <cmath>
 #include <cstddef>
 #include <iomanip>
 #include <iostream>
+#include <ranges>
 #include <utility>
 
 using std::size_t;
@@ -27,7 +27,7 @@ std::ostream &operator<<(std::ostream &os, const Solution &sol) {
     os << std::setfill(' ');
 
     // Rows
-    for (const auto &order : sol.sequence) {
+    for (const auto &order : sol.sequence | std::ranges::views::drop(1)) {
         os << std::setw(id_width) << order.id << std::setw(finish_time_width) << order.finish_time
            << std::setw(penalty_width) << order.penalty << '\n';
     }

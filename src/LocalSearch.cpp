@@ -2,8 +2,11 @@
 #include "Util.h"
 #include "src/Instance.h"
 #include "src/Solution.h"
+
 #include <cassert>
+#include <cstddef>
 #include <iostream>
+#include <limits>
 
 using std::size_t;
 
@@ -24,9 +27,9 @@ inline long EvalSwap(const Solution &s, size_t i, size_t j, const Instance &inst
     Vertex v_j = s.sequence[j];
     delta += static_cast<long>(-v_j.penalty + instance.CalculateVertex(v_j, s.sequence[i - 1]));
 
-    long set_delta_1 =
+    const long set_delta_1 =
         instance.setup_time(s.sequence[i + 1], v_j) - instance.setup_time(s.sequence[i + 1], s.sequence[i]);
-    long shift1 = static_cast<long>(v_j.finish_time) - static_cast<long>(s.sequence[i].finish_time) + set_delta_1;
+    const long shift1 = static_cast<long>(v_j.finish_time) - static_cast<long>(s.sequence[i].finish_time) + set_delta_1;
     delta += EvalRange(shift1, i + 1, j, s, instance);
 
     Vertex v_i = s.sequence[i];
@@ -38,7 +41,7 @@ inline long EvalSwap(const Solution &s, size_t i, size_t j, const Instance &inst
         set_delta_2 =
             instance.setup_time(s.sequence[j + 1], v_i) - instance.setup_time(s.sequence[j + 1], s.sequence[j]);
     }
-    long shift2 = static_cast<long>(v_i.finish_time) - static_cast<long>(s.sequence[j].finish_time) + set_delta_2;
+    const long shift2 = static_cast<long>(v_i.finish_time) - static_cast<long>(s.sequence[j].finish_time) + set_delta_2;
     delta += EvalRange(shift2, j + 1, s.sequence.size(), s, instance);
 
     return delta;
@@ -63,8 +66,8 @@ bool Swap(Solution &s, const Instance &instance) {
     for (size_t i = 1; i < s.sequence.size() - 1; i++) {
 
         for (size_t j = i + 2; j < s.sequence.size(); j++) {
-            long delta = EvalSwap(s, i, j, instance);
-            // assert(IsCorrect(s, i, j, s.cost() + delta));
+            const long delta = EvalSwap(s, i, j, instance);
+            assert(IsCorrect(s, i, j, s.cost() + delta));
 
             if (delta < best_delta) {
                 best_i = i;
@@ -106,4 +109,4 @@ void LocalSearch(Solution &s, const Instance &instance) {
     }
 }
 
-[[nodiscard]] Solution Pertubation(Solution best, const Instance &instance) { return best; }
+[[nodiscard]] Solution Pertubation(Solution best, const Instance & /*instance*/) { return best; }

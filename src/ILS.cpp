@@ -5,8 +5,8 @@
 #include "Util.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
-#include <iostream>
 #include <utility>
 
 using std::size_t;
@@ -25,8 +25,8 @@ using std::vector;
     // Decresent order, the last will be the best one
     std::sort(CL.rbegin(), CL.rend(), criteria);
 
-    long r = ceil(parameters::R_MAX * static_cast<double>(CL.size()));
-    long range = my_rand::rand_int(static_cast<long>(1), r);
+    const long r = ceil(parameters::R_MAX * static_cast<double>(CL.size()));
+    const long range = my_rand::rand_int(static_cast<long>(1), r);
 
     auto chose_it = my_rand::choose_random_value(CL.end() - range, CL.end());
     Vertex best = *chose_it;
