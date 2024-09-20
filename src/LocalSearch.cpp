@@ -1,7 +1,7 @@
 #include "LocalSearch.h"
+#include "Instance.h"
+#include "Solution.h"
 #include "Util.h"
-#include "src/Instance.h"
-#include "src/Solution.h"
 
 #include <cassert>
 #include <cstddef>
@@ -10,7 +10,7 @@
 
 using std::size_t;
 
-enum class Searchs { SWAP, REINSERTION };
+enum class Searchs : bool { SWAP, REINSERTION };
 
 inline long EvalRange(long delta_time, size_t begin, size_t end, const Solution &s, const Instance &instance) {
     long delta = 0;
@@ -21,40 +21,52 @@ inline long EvalRange(long delta_time, size_t begin, size_t end, const Solution 
     return delta;
 }
 
-inline long EvalSwap(const Solution &s, size_t i, size_t j, const Instance &instance) {
+inline long CalcShift(const Vertex &inserted, const Vertex &removed, const Vertex &next, const Instance &instance) {
+
+    const long set_delta = static_cast<long>(instance.setup_time(next, inserted) 
+                                             - instance.setup_time(next, removed));
+    return static_cast<long>(inserted.finish_time) - static_cast<long>(removed.finish_time) + set_delta;
+}
+
+inline long EvalSwap(size_t i, size_t j, const Solution &s, const Instance &instance) {
     long delta = 0;
 
+
     Vertex v_j = s.sequence[j];
+    // Calculate the penalty delta of v_j node, alters the values of v_j
     delta += static_cast<long>(-v_j.penalty + instance.CalculateVertex(v_j, s.sequence[i - 1]));
 
-    const long set_delta_1 =
-        instance.setup_time(s.sequence[i + 1], v_j) - instance.setup_time(s.sequence[i + 1], s.sequence[i]);
-    const long shift1 = static_cast<long>(v_j.finish_time) - static_cast<long>(s.sequence[i].finish_time) + set_delta_1;
-    delta += EvalRange(shift1, i + 1, j, s, instance);
+    // Calculate the shift of time between the indeces i and j caused by the swap.
+    const long shift1 = CalcShift(v_j, s.sequence[i], s.sequence[i+1], instance);
 
-    Vertex v_i = s.sequence[i];
     Vertex v_before_i = s.sequence[j - 1];
     v_before_i.finish_time += shift1;
+    Vertex v_i = s.sequence[i];
+    // Calculate the penalty delta of v_i node, alters the values of v_i
     delta += static_cast<long>(-v_i.penalty + instance.CalculateVertex(v_i, v_before_i));
-    long set_delta_2 = 0;
-    if (j != s.sequence.size() - 1) {
-        set_delta_2 =
-            instance.setup_time(s.sequence[j + 1], v_i) - instance.setup_time(s.sequence[j + 1], s.sequence[j]);
+
+    delta += EvalRange(shift1, i + 1, j, s, instance);
+
+    if (j == s.sequence.size() - 1) {
+        return delta;
     }
-    const long shift2 = static_cast<long>(v_i.finish_time) - static_cast<long>(s.sequence[j].finish_time) + set_delta_2;
+
+    // Calculate the shift from index j until the end of the sequence.
+    const long shift2 = CalcShift(v_i, s.sequence[j], s.sequence[j+1], instance);
     delta += EvalRange(shift2, j + 1, s.sequence.size(), s, instance);
 
     return delta;
 }
 
-bool IsCorrect(Solution s, size_t i, size_t j, size_t estimated) {
+bool IsCorrect(size_t delta, size_t i, size_t j, Solution s) {
+    const size_t estimated = delta + s.cost();
     s.ApplySwap(i, j);
     if (s.cost() != estimated) {
         std::cerr << s << '\n';
         std::cerr << "Correct: " << s.cost() << ", Received: " << estimated << '\n';
     }
 
-    return s.CorrectCost() == estimated;
+    return s.DebugCost() == estimated;
 }
 
 bool Swap(Solution &s, const Instance &instance) {
@@ -66,8 +78,8 @@ bool Swap(Solution &s, const Instance &instance) {
     for (size_t i = 1; i < s.sequence.size() - 1; i++) {
 
         for (size_t j = i + 2; j < s.sequence.size(); j++) {
-            const long delta = EvalSwap(s, i, j, instance);
-            assert(IsCorrect(s, i, j, s.cost() + delta));
+            const long delta = EvalSwap(i, j, s, instance);
+            assert(IsCorrect(delta, i, j, s));
 
             if (delta < best_delta) {
                 best_i = i;
@@ -91,14 +103,14 @@ void LocalSearch(Solution &s, const Instance &instance) {
     std::vector searchs = {Searchs::SWAP, Searchs::REINSERTION};
     while (!searchs.empty()) {
         bool improved = false;
-        auto chose = my_rand::choose_random_value(searchs.begin(), searchs.end());
+        auto chose = rng::pick_iter(searchs.begin(), searchs.end());
         switch (*chose) {
         case Searchs::SWAP:
             improved = Swap(s, instance);
             break;
-            // case Searchs::REINSERTION:
-            //     improved = Reinsertion(s, 1);
-            //     break;
+        case Searchs::REINSERTION:
+            improved = Reinsertion(s, 1);
+            break;
         }
 
         if (improved) {

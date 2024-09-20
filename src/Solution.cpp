@@ -39,14 +39,22 @@ std::ostream &operator<<(std::ostream &os, const Solution &sol) {
 Solution::Solution(const Instance &instance) : m_instance(instance) {}
 
 Solution::Solution(const Solution &other)
-    : m_instance(other.m_instance), m_sequence(other.m_sequence), m_cost(other.cost()) {}
+    : m_instance(other.m_instance), m_sequence(other.m_sequence), m_cost(other.cost()) {
+
+    assert(DebugCost() == m_cost);
+}
 
 Solution::Solution(Solution &&other) noexcept
-    : m_instance(other.m_instance), m_sequence(std::move(other.m_sequence)), m_cost(other.cost()) {}
+    : m_instance(other.m_instance), m_sequence(std::move(other.m_sequence)), m_cost(other.cost()) {
+
+    assert(DebugCost() == m_cost);
+}
 
 Solution &Solution::operator=(const Solution &other) {
     m_sequence = other.m_sequence;
     m_cost = other.cost();
+
+    assert(DebugCost() == m_cost);
 
     return *this;
 }
@@ -54,27 +62,28 @@ Solution &Solution::operator=(const Solution &other) {
 Solution &Solution::operator=(Solution &&other) noexcept {
     m_sequence = std::move(other.m_sequence);
     m_cost = other.cost();
+    assert(DebugCost() == m_cost);
 
     return *this;
 }
 
-size_t Solution::CorrectCost() {
+size_t Solution::DebugCost() {
 
     assert(m_sequence.front().id == -1);
-    size_t cost = 0;
+    size_t sum_cost = 0;
 
     for (size_t i = 1; i < m_sequence.size(); i++) {
         const Vertex prev = m_sequence[i - 1];
-        const Vertex &current = m_sequence[i];
+        const Vertex current = m_sequence[i];
 
-        cost += m_instance.EvalVertex(current, prev);
+        sum_cost += m_instance.EvalVertex(current, prev);
     }
 
-    if (cost != m_cost) {
-        std::cerr << "Correct: " << cost << ", Received: " << m_cost << '\n';
+    if (sum_cost != m_cost) {
+        std::cerr << "Correct: " << sum_cost << ", Received: " << m_cost << '\n';
         assert(false);
     }
-    return cost;
+    return sum_cost;
 }
 
 Solution::Solution(vector<Vertex> &&sequence, const Instance &instance)
@@ -85,14 +94,14 @@ Solution::Solution(vector<Vertex> &&sequence, const Instance &instance)
 Solution::Solution(vector<Vertex> &&sequence, size_t cost, const Instance &instance)
     : m_instance(instance), m_sequence(std::move(sequence)), m_cost(cost) {
 
-    assert(this->CorrectCost() == m_cost);
+    assert(DebugCost() == m_cost);
 }
 
 void Solution::ApplySwap(size_t i, size_t j) {
     std::swap(m_sequence[i], m_sequence[j]);
     RecalculateCost();
 }
-void Solution::ApplyReinsertion(size_t i, size_t j) {}
+void Solution::ApplyReinsertion(size_t /*i*/, size_t /*j*/) {}
 
 void Solution::RecalculateCost() {
     assert(m_sequence.front().id == -1);

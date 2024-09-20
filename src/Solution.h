@@ -24,16 +24,15 @@ class Solution {
 
     [[nodiscard]] inline std::size_t cost() const { return m_cost; }
 
-    // TODO:
     void ApplySwap(size_t i, size_t j);
+    // TODO:
     void ApplyReinsertion(size_t i, size_t j);
 
     // NOTE: read only access to private member
     const std::vector<Vertex> &sequence = m_sequence;
-    std::size_t CorrectCost();
+    std::size_t DebugCost();
 
   private:
-    // TODO:
     void RecalculateCost();
 
     const Instance &m_instance;

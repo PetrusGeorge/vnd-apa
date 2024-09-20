@@ -26,9 +26,9 @@ using std::vector;
     std::sort(CL.rbegin(), CL.rend(), criteria);
 
     const long r = ceil(parameters::R_MAX * static_cast<double>(CL.size()));
-    const long range = my_rand::rand_int(static_cast<long>(1), r);
+    const long range = rng::rand_int(static_cast<long>(1), r);
 
-    auto chose_it = my_rand::choose_random_value(CL.end() - range, CL.end());
+    auto chose_it = rng::pick_iter(CL.end() - range, CL.end());
     Vertex best = *chose_it;
     CL.erase(chose_it);
     return best;

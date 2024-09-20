@@ -5,23 +5,25 @@
 #include <iterator>
 #include <random>
 #include <stdexcept>
+#include <type_traits>
 
 namespace parameters {
 constexpr double R_MAX = 0.25;
 }
 
-namespace my_rand {
+namespace rng {
 
 inline thread_local std::mt19937 gen(std::random_device{}()); // NOLINT
 
 inline void set_seed(std::size_t seed) { gen.seed(seed); }
 
-template <typename IntType> IntType rand_int(IntType begin, IntType end) {
-    std::uniform_int_distribution<> dis(begin, end);
+template <typename IntType> [[nodiscard]] IntType rand_int(IntType begin, IntType end) {
+    static_assert(std::is_integral_v<IntType>, "Function only receives integer types");
+    std::uniform_int_distribution<IntType> dis(begin, end);
     return dis(gen);
 }
 
-template <typename Iterator> Iterator choose_random_value(Iterator begin, Iterator end) {
+template <typename Iterator> [[nodiscard]] Iterator pick_iter(Iterator begin, Iterator end) {
     if (begin == end) {
         throw std::invalid_argument("Range is empty");
     }
@@ -32,6 +34,6 @@ template <typename Iterator> Iterator choose_random_value(Iterator begin, Iterat
     return begin;
 }
 
-} // namespace my_rand
+} // namespace rng
 
 #endif
