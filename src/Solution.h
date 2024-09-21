@@ -12,7 +12,7 @@
 class Solution {
 
   public:
-    Solution(const Instance &instance);
+    explicit Solution(const Instance &instance);
     Solution(Solution &&) noexcept;
     Solution &operator=(const Solution &);
     Solution &operator=(Solution &&) noexcept;

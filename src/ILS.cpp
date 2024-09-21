@@ -5,10 +5,13 @@
 #include "Util.h"
 
 #include <algorithm>
+#include <atomic>
 #include <cmath>
 #include <cstddef>
-#include <iostream>
+#include <mutex>
+#include <thread>
 #include <utility>
+#include <vector>
 
 using std::size_t;
 using std::vector;
@@ -56,31 +59,48 @@ Solution Construction(const Instance &instance) {
     return {std::move(sequence), cost, instance};
 }
 
-Solution ILS(int max_iter, int max_iter_ils, const Instance &instance) {
+Solution ILS(int max_iter, int max_iter_ils, int num_threads, const Instance &instance) {
 
+    // TODO: Clean this horrible working mess
+    std::atomic<int> iter(0);
+    std::mutex mtx;
+    std::vector<std::thread> threads;
     Solution best_of_all(instance);
-    for (int iter = 0; iter < max_iter; iter++) {
+    auto teste = [&iter, &best_of_all, &mtx, &instance, max_iter_ils, max_iter](int id) {
+        rng::set_seed(std::random_device{}() + id);
+        for (iter = 0; iter < max_iter; iter++) {
 
-        Solution best(instance);
-        Solution s = Construction(instance);
+            Solution best(instance);
+            Solution s = Construction(instance);
 
-        for (int iter_ils = 0; iter_ils < max_iter_ils; iter_ils++) {
-            LocalSearch(s, instance);
+            for (int iter_ils = 0; iter_ils < max_iter_ils; iter_ils++) {
+                LocalSearch(s, instance);
 
-            if (s.cost() < best.cost()) {
-                best = s;
-                iter_ils = -1;
+                if (s.cost() < best.cost()) {
+                    best = s;
+                    iter_ils = -1;
+                }
+
+                s = Pertubation(best, instance);
             }
+            const std::lock_guard<std::mutex> lock(mtx);
+            if (best.cost() < best_of_all.cost()) {
+                best_of_all = std::move(best);
 
-            s = Pertubation(best, instance);
-        }
-        if (best.cost() < best_of_all.cost()) {
-            best_of_all = std::move(best);
-
-            if (best_of_all.cost() == 0) {
-                break;
+                if (best_of_all.cost() == 0) {
+                    iter = max_iter + 1;
+                    break;
+                }
             }
         }
+    };
+
+    threads.reserve(num_threads);
+    for (int i = 0; i < num_threads; ++i) {
+        threads.emplace_back(teste, i);
+    }
+    for (auto &t : threads) {
+        t.join();
     }
 
     return best_of_all;

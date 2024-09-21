@@ -23,21 +23,19 @@ inline long EvalRange(long delta_time, size_t begin, size_t end, const Solution 
 
 inline long CalcShift(const Vertex &inserted, const Vertex &removed, const Vertex &next, const Instance &instance) {
 
-    const long set_delta = static_cast<long>(instance.setup_time(next, inserted) 
-                                             - instance.setup_time(next, removed));
+    const long set_delta = static_cast<long>(instance.setup_time(next, inserted) - instance.setup_time(next, removed));
     return static_cast<long>(inserted.finish_time) - static_cast<long>(removed.finish_time) + set_delta;
 }
 
 inline long EvalSwap(size_t i, size_t j, const Solution &s, const Instance &instance) {
     long delta = 0;
 
-
     Vertex v_j = s.sequence[j];
     // Calculate the penalty delta of v_j node, alters the values of v_j
     delta += static_cast<long>(-v_j.penalty + instance.CalculateVertex(v_j, s.sequence[i - 1]));
 
     // Calculate the shift of time between the indeces i and j caused by the swap.
-    const long shift1 = CalcShift(v_j, s.sequence[i], s.sequence[i+1], instance);
+    const long shift1 = CalcShift(v_j, s.sequence[i], s.sequence[i + 1], instance);
 
     Vertex v_before_i = s.sequence[j - 1];
     v_before_i.finish_time += shift1;
@@ -52,7 +50,7 @@ inline long EvalSwap(size_t i, size_t j, const Solution &s, const Instance &inst
     }
 
     // Calculate the shift from index j until the end of the sequence.
-    const long shift2 = CalcShift(v_i, s.sequence[j], s.sequence[j+1], instance);
+    const long shift2 = CalcShift(v_i, s.sequence[j], s.sequence[j + 1], instance);
     delta += EvalRange(shift2, j + 1, s.sequence.size(), s, instance);
 
     return delta;
@@ -121,14 +119,14 @@ void LocalSearch(Solution &s, const Instance &instance) {
     }
 }
 
-[[nodiscard]] Solution Pertubation(Solution best, const Instance & /*instance*/) { 
+[[nodiscard]] Solution Pertubation(Solution best, const Instance & /*instance*/) {
 
-    //TODO: make a better pertubation
-    for(int i = 0; i < 3; i++){
-        size_t a = rng::rand_int(static_cast<size_t>(1), best.sequence.size()-1);
+    // TODO: make a better pertubation
+    for (int i = 0; i < 3; i++) {
+        const size_t a = rng::rand_int(static_cast<size_t>(1), best.sequence.size() - 1);
         size_t b = a;
-        while(a == b){
-            b = rng::rand_int(static_cast<size_t>(1), best.sequence.size()-1);
+        while (a == b) {
+            b = rng::rand_int(static_cast<size_t>(1), best.sequence.size() - 1);
         }
         best.ApplySwap(a, b);
     }

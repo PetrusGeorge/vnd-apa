@@ -19,7 +19,7 @@ class Instance {
   public:
     explicit Instance(const std::filesystem::path &filename);
 
-    [[nodiscard]] inline std::size_t setup_time(const Vertex &order, const Vertex order_behind) const {
+    [[nodiscard]] inline std::size_t setup_time(const Vertex &order, const Vertex &order_behind) const {
         return m_setup_times[order_behind.id + 1][order.id];
     }
     [[nodiscard]] inline std::size_t process_time(const Vertex &order) const { return m_process_times[order.id]; }
