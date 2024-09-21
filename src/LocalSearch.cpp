@@ -121,4 +121,17 @@ void LocalSearch(Solution &s, const Instance &instance) {
     }
 }
 
-[[nodiscard]] Solution Pertubation(Solution best, const Instance & /*instance*/) { return best; }
+[[nodiscard]] Solution Pertubation(Solution best, const Instance & /*instance*/) { 
+
+    //TODO: make a better pertubation
+    for(int i = 0; i < 3; i++){
+        size_t a = rng::rand_int(static_cast<size_t>(1), best.sequence.size()-1);
+        size_t b = a;
+        while(a == b){
+            b = rng::rand_int(static_cast<size_t>(1), best.sequence.size()-1);
+        }
+        best.ApplySwap(a, b);
+    }
+
+    return best;
+}

@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <iostream>
 #include <utility>
 
 using std::size_t;
@@ -75,6 +76,10 @@ Solution ILS(int max_iter, int max_iter_ils, const Instance &instance) {
         }
         if (best.cost() < best_of_all.cost()) {
             best_of_all = std::move(best);
+
+            if (best_of_all.cost() == 0) {
+                break;
+            }
         }
     }
 

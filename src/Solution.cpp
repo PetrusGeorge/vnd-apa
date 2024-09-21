@@ -98,6 +98,7 @@ Solution::Solution(vector<Vertex> &&sequence, size_t cost, const Instance &insta
 }
 
 void Solution::ApplySwap(size_t i, size_t j) {
+    assert(i != 0 || j != 0);
     std::swap(m_sequence[i], m_sequence[j]);
     RecalculateCost();
 }
