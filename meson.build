@@ -11,7 +11,8 @@ project(
 )
 
 subdir('src')
+argparse_dep = dependency('argparse')
 
 extra_args = ['-march=native']
 
-executable('apa', sources, cpp_args: extra_args, install: true)
+executable('apa', sources, cpp_args: extra_args, dependencies: argparse_dep, install: true)
