@@ -24,7 +24,7 @@ int main(int argc, char *argv[]) {
 
     const Instance instance(args.front());
 
-    const Solution result = ILS(50, 150, 1, instance);
+    const Solution result = ILS(50, 150, 8, instance);
 
     std::cout << result << '\n';
 }

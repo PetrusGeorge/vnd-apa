@@ -24,9 +24,8 @@ class Solution {
 
     [[nodiscard]] inline std::size_t cost() const { return m_cost; }
 
-    void ApplySwap(size_t i, size_t j);
-    // TODO:
-    void ApplyReinsertion(size_t i, size_t j);
+    void ApplySwap(std::size_t i, std::size_t j);
+    void ApplyReinsertion(std::size_t i, std::size_t j, std::size_t block_size);
 
     // NOTE: read only access to private member
     const std::vector<Vertex> &sequence = m_sequence;

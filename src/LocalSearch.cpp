@@ -5,12 +5,14 @@
 
 #include <cassert>
 #include <cstddef>
+#include <cstdio>
 #include <iostream>
 #include <limits>
+#include <ostream>
 
 using std::size_t;
 
-enum class Searchs : bool { SWAP, REINSERTION };
+enum class Searchs : short { SWAP, REINSERTION_1, REINSERTION_2, REINSERTION_3 };
 
 inline long EvalRange(long delta_time, size_t begin, size_t end, const Solution &s, const Instance &instance) {
     long delta = 0;
@@ -79,9 +81,14 @@ inline long EvalSwapAdjacent(size_t i, const Solution &s, const Instance &instan
     return delta;
 }
 
-bool IsCorrect(size_t delta, size_t i, size_t j, Solution s) {
+bool IsCorrect(size_t delta, size_t i, size_t j, Solution s, int block_size = -1) {
     const size_t estimated = delta + s.cost();
-    s.ApplySwap(i, j);
+
+    if (block_size == -1) {
+        s.ApplySwap(i, j);
+    } else {
+        s.ApplyReinsertion(i, j, block_size);
+    }
     if (s.cost() != estimated) {
         std::cerr << s << '\n';
         std::cerr << "Correct: " << s.cost() << ", Received: " << estimated << '\n';
@@ -128,10 +135,85 @@ bool Swap(Solution &s, const Instance &instance) {
     return false;
 }
 
-bool Reinsertion(Solution & /*s*/, size_t /*block_size*/) { return false; }
+inline long CalcShiftReinsertionRemove(const Vertex &last, const Vertex &before, const Vertex &prox,
+                                       const Instance &instance) {
+
+    const long set_delta =
+        static_cast<long>(instance.setup_time(prox, before)) - static_cast<long>(instance.setup_time(prox, last));
+
+    const long delta_time = static_cast<long>(before.finish_time) - static_cast<long>(last.finish_time);
+
+    return set_delta + delta_time;
+}
+
+long EvalReinsertion(size_t i, size_t j, size_t block_size, const Solution &s, const Instance &instance) {
+    long delta = 0;
+
+    // TODO: Burn this
+    const long shift1 = CalcShiftReinsertionRemove(s.sequence[i + block_size - 1], s.sequence[i - 1],
+                                                   s.sequence[i + block_size], instance);
+    delta += EvalRange(shift1, i + block_size, j + 1, s, instance);
+
+    const long shift_block =
+        static_cast<long>(s.sequence[j].finish_time + shift1 + instance.setup_time(s.sequence[i], s.sequence[j]) -
+                          (s.sequence[i].finish_time - instance.process_time(s.sequence[i])));
+    delta += EvalRange(shift_block, i, i + block_size, s, instance);
+
+    if (j == s.sequence.size() - 1) {
+        return delta;
+    }
+
+    const long shift2 = static_cast<long>((s.sequence[i + block_size - 1].finish_time + shift_block +
+                                           instance.setup_time(s.sequence[j + 1], s.sequence[i + block_size - 1])) -
+                                          (s.sequence[j + 1].finish_time - instance.process_time(s.sequence[j + 1])));
+
+    delta += EvalRange(shift2, j + 1, s.sequence.size(), s, instance);
+
+    return delta;
+}
+
+bool Reinsertion(Solution &s, size_t block_size, const Instance &instance) {
+
+    long best_delta = 0;
+    size_t best_i = std::numeric_limits<size_t>::max();
+    size_t best_j = std::numeric_limits<size_t>::max();
+
+    for (size_t i = 1; i < s.sequence.size() - block_size; i++) {
+        for (size_t j = i + block_size; j < s.sequence.size(); j++) {
+            const long delta = EvalReinsertion(i, j, block_size, s, instance);
+            assert(IsCorrect(delta, i, j, s, block_size));
+
+            if (delta < best_delta) {
+                best_i = i;
+                best_j = j;
+                best_delta = delta;
+            }
+        }
+    }
+
+    // for (size_t i = 2; i < s.sequence.size() - block_size; i++) {
+    //     for (size_t j = 1; j < i; j++) {
+    //         const long delta = EvalSwap(i, j, s, instance);
+    //         assert(IsCorrect(delta, i, j, s, Searchs::REINSERTION, block_size));
+    //
+    //         if (delta < best_delta) {
+    //             best_i = i;
+    //             best_j = j;
+    //             best_delta = delta;
+    //         }
+    //     }
+    // }
+
+    if (best_delta < 0) {
+        s.ApplyReinsertion(best_i, best_j, block_size);
+        return true;
+    }
+
+    return false;
+}
 
 void LocalSearch(Solution &s, const Instance &instance) {
-    std::vector searchs = {Searchs::SWAP, Searchs::REINSERTION};
+    std::vector searchs = {Searchs::SWAP, Searchs::REINSERTION_1, Searchs::REINSERTION_2, Searchs::REINSERTION_3};
     while (!searchs.empty()) {
         bool improved = false;
         auto chose = rng::pick_iter(searchs.begin(), searchs.end());
@@ -139,13 +221,19 @@ void LocalSearch(Solution &s, const Instance &instance) {
         case Searchs::SWAP:
             improved = Swap(s, instance);
             break;
-        case Searchs::REINSERTION:
-            improved = Reinsertion(s, 1);
+        case Searchs::REINSERTION_1:
+            improved = Reinsertion(s, 1, instance);
+            break;
+        case Searchs::REINSERTION_2:
+            improved = Reinsertion(s, 2, instance);
+            break;
+        case Searchs::REINSERTION_3:
+            improved = Reinsertion(s, 3, instance);
             break;
         }
 
         if (improved) {
-            searchs = {Searchs::SWAP, Searchs::REINSERTION};
+            searchs = {Searchs::SWAP, Searchs::REINSERTION_1, Searchs::REINSERTION_2, Searchs::REINSERTION_3};
             continue;
         }
         searchs.erase(chose);

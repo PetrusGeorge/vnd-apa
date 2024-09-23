@@ -1,6 +1,7 @@
 #include "Solution.h"
 #include "Instance.h"
 
+#include <algorithm>
 #include <cassert>
 #include <cstddef>
 #include <iomanip>
@@ -102,7 +103,21 @@ void Solution::ApplySwap(size_t i, size_t j) {
     std::swap(m_sequence[i], m_sequence[j]);
     RecalculateCost();
 }
-void Solution::ApplyReinsertion(size_t /*i*/, size_t /*j*/) {}
+void Solution::ApplyReinsertion(size_t i, size_t j, size_t block_size) {
+
+    const long i_index = static_cast<long>(i);
+    const long j_index = static_cast<long>(j);
+    const long block = static_cast<long>(block_size);
+
+    if (i < j) {
+        std::rotate(m_sequence.begin() + i_index, m_sequence.begin() + i_index + block,
+                    m_sequence.begin() + j_index + 1);
+    } else {
+        std::rotate(m_sequence.begin() + j_index, m_sequence.begin() + i_index, m_sequence.begin() + i_index + block);
+    }
+
+    RecalculateCost();
+}
 
 void Solution::RecalculateCost() {
     assert(m_sequence.front().id == -1);
