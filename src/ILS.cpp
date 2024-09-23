@@ -86,7 +86,6 @@ Solution ILS(int max_iter, int max_iter_ils, int num_threads, const Instance &in
             const std::lock_guard<std::mutex> lock(mtx);
             if (best.cost() < best_of_all.cost()) {
                 best_of_all = std::move(best);
-
                 if (best_of_all.cost() == 0) {
                     iter = max_iter + 1;
                     break;

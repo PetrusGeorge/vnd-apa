@@ -56,12 +56,36 @@ inline long EvalSwap(size_t i, size_t j, const Solution &s, const Instance &inst
     return delta;
 }
 
+inline long EvalSwapAdjacent(size_t i, const Solution &s, const Instance &instance) {
+    const size_t j = i + 1;
+    long delta = 0;
+
+    Vertex v_i = s.sequence[i];
+    Vertex v_j = s.sequence[j];
+    // Calculate the penalty delta of v_j node, alters the values of v_j
+    delta += static_cast<long>(-v_j.penalty + instance.CalculateVertex(v_j, s.sequence[i - 1]));
+
+    // Calculate the penalty delta of v_i node, alters the values of v_i
+    delta += static_cast<long>(-v_i.penalty + instance.CalculateVertex(v_i, v_j));
+
+    if (j == s.sequence.size() - 1) {
+        return delta;
+    }
+
+    // Calculate the shift from index j until the end of the sequence.
+    const long shift2 = CalcShift(v_i, s.sequence[j], s.sequence[j + 1], instance);
+    delta += EvalRange(shift2, j + 1, s.sequence.size(), s, instance);
+
+    return delta;
+}
+
 bool IsCorrect(size_t delta, size_t i, size_t j, Solution s) {
     const size_t estimated = delta + s.cost();
     s.ApplySwap(i, j);
     if (s.cost() != estimated) {
         std::cerr << s << '\n';
         std::cerr << "Correct: " << s.cost() << ", Received: " << estimated << '\n';
+        std::cerr << "(i,j): " << "(" << i << "," << j << ")\n";
     }
 
     return s.DebugCost() == estimated;
@@ -74,7 +98,6 @@ bool Swap(Solution &s, const Instance &instance) {
     size_t best_j = std::numeric_limits<size_t>::max();
 
     for (size_t i = 1; i < s.sequence.size() - 1; i++) {
-
         for (size_t j = i + 2; j < s.sequence.size(); j++) {
             const long delta = EvalSwap(i, j, s, instance);
             assert(IsCorrect(delta, i, j, s));
@@ -84,6 +107,16 @@ bool Swap(Solution &s, const Instance &instance) {
                 best_j = j;
                 best_delta = delta;
             }
+        }
+    }
+
+    for (size_t i = 1; i < s.sequence.size() - 1; i++) {
+        const long delta = EvalSwapAdjacent(i, s, instance);
+        assert(IsCorrect(delta, i, i + 1, s));
+        if (delta < best_delta) {
+            best_i = i;
+            best_j = i + 1;
+            best_delta = delta;
         }
     }
 
