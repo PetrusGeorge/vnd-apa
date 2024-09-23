@@ -62,17 +62,18 @@ Solution Construction(const Instance &instance) {
 Solution ILS(int max_iter, int max_iter_ils, int num_threads, const Instance &instance) {
 
     // TODO: Clean this horrible working mess
-    std::atomic<int> iter(0);
+    std::atomic<int> iter = 0;
     std::mutex mtx;
     std::vector<std::thread> threads;
     Solution best_of_all(instance);
-    auto teste = [&iter, &best_of_all, &mtx, &instance, max_iter_ils, max_iter](int id) {
-        rng::set_seed(std::random_device{}() + id);
-        for (iter = 0; iter < max_iter; iter++) {
+    auto ils_lambda = [&iter, &best_of_all, &mtx, &instance, max_iter_ils, max_iter]() {
+        while (true) {
+            if (iter++ >= max_iter) {
+                break;
+            }
 
             Solution best(instance);
             Solution s = Construction(instance);
-
             for (int iter_ils = 0; iter_ils < max_iter_ils; iter_ils++) {
                 LocalSearch(s, instance);
 
@@ -96,7 +97,7 @@ Solution ILS(int max_iter, int max_iter_ils, int num_threads, const Instance &in
 
     threads.reserve(num_threads);
     for (int i = 0; i < num_threads; ++i) {
-        threads.emplace_back(teste, i);
+        threads.emplace_back(ils_lambda);
     }
     for (auto &t : threads) {
         t.join();
