@@ -15,20 +15,47 @@ using std::size_t;
 
 enum class Searchs : std::uint8_t { SWAP, REINSERTION_1, REINSERTION_2, REINSERTION_3 };
 
-inline long EvalRange(long delta_time, size_t begin, size_t end, const Solution &s, const Instance &instance) {
+inline std::pair<long, size_t> EvalRange(size_t start_time, size_t begin, size_t end, const Vertex &real_behind,
+                                          const Solution &s, const Instance &instance) {
     long delta = 0;
-    for (size_t i = begin; i < end; i++) {
-        delta -= static_cast<long>(s.sequence[i].penalty);
-        delta += static_cast<long>(instance.EvalVertex(s.sequence[i], s.sequence[i - 1], delta_time));
+
+    Vertex first = s.sequence[begin];
+    size_t finish_time_before = instance.setup_time(first, real_behind) + instance.process_time(first) + start_time;
+
+    delta -= static_cast<long>(s.sequence[begin].penalty);
+    if (finish_time_before > instance.deadline(first)) {
+        delta += static_cast<long>((finish_time_before - instance.deadline(first)) * instance.weight(first));
     }
-    return delta;
+
+    for (size_t i = begin + 1; i < end; i++) {
+        delta -= static_cast<long>(s.sequence[i].penalty);
+
+        auto [penalty, finish_time] =
+            instance.EvalVertexWithStart(s.sequence[i], s.sequence[i - 1], finish_time_before);
+        delta += static_cast<long>(penalty);
+
+        finish_time_before = finish_time;
+    }
+
+    return {delta, finish_time_before};
 }
 
-inline long CalcShift(const Vertex &inserted, const Vertex &removed, const Vertex &next, const Instance &instance) {
+// inline long CalcShift(const Vertex &inserted, const Vertex &removed, const Vertex &next, const Instance &instance) {
 
-    const long set_delta = static_cast<long>(instance.setup_time(next, inserted) - instance.setup_time(next, removed));
-    return static_cast<long>(inserted.finish_time) - static_cast<long>(removed.finish_time) + set_delta;
-}
+//     const long set_delta = static_cast<long>(instance.setup_time(next, inserted) - instance.setup_time(next, removed));
+//     return static_cast<long>(inserted.finish_time) - static_cast<long>(removed.finish_time) + set_delta;
+// }
+
+// inline long CalcShiftReinsertionRemove(const Vertex &last, const Vertex &before, const Vertex &prox,
+//                                        const Instance &instance) {
+//
+//     const long set_delta =
+//         static_cast<long>(instance.setup_time(prox, before)) - static_cast<long>(instance.setup_time(prox, last));
+//
+//     const long delta_time = static_cast<long>(before.finish_time) - static_cast<long>(last.finish_time);
+//
+//     return set_delta + delta_time;
+// }
 
 inline long EvalSwap(size_t i, size_t j, const Solution &s, const Instance &instance) {
     long delta = 0;
@@ -37,24 +64,22 @@ inline long EvalSwap(size_t i, size_t j, const Solution &s, const Instance &inst
     // Calculate the penalty delta of v_j node, alters the values of v_j
     delta += static_cast<long>(-v_j.penalty + instance.CalculateVertex(v_j, s.sequence[i - 1]));
 
-    // Calculate the shift of time between the indeces i and j caused by the swap.
-    const long shift1 = CalcShift(v_j, s.sequence[i], s.sequence[i + 1], instance);
+    auto [penalty_between, finish_time_between] = EvalRange(v_j.finish_time, i + 1, j, v_j, s, instance);
 
+    delta += penalty_between;
     Vertex v_before_i = s.sequence[j - 1];
-    v_before_i.finish_time += shift1;
+    v_before_i.finish_time = finish_time_between;
     Vertex v_i = s.sequence[i];
     // Calculate the penalty delta of v_i node, alters the values of v_i
     delta += static_cast<long>(-v_i.penalty + instance.CalculateVertex(v_i, v_before_i));
-
-    delta += EvalRange(shift1, i + 1, j, s, instance);
 
     if (j == s.sequence.size() - 1) {
         return delta;
     }
 
     // Calculate the shift from index j until the end of the sequence.
-    const long shift2 = CalcShift(v_i, s.sequence[j], s.sequence[j + 1], instance);
-    delta += EvalRange(shift2, j + 1, s.sequence.size(), s, instance);
+    auto [penalty_after, _] = EvalRange(v_i.finish_time, j + 1, s.sequence.size(), v_i, s, instance);
+    delta += penalty_after;
 
     return delta;
 }
@@ -76,9 +101,9 @@ inline long EvalSwapAdjacent(size_t i, const Solution &s, const Instance &instan
     }
 
     // Calculate the shift from index j until the end of the sequence.
-    const long shift2 = CalcShift(v_i, s.sequence[j], s.sequence[j + 1], instance);
-    delta += EvalRange(shift2, j + 1, s.sequence.size(), s, instance);
-
+    // const long shift2 = CalcShift(v_i, s.sequence[j], s.sequence[j + 1], instance);
+    auto [penalty, _] = EvalRange(v_i.finish_time, j + 1, s.sequence.size(), v_i, s, instance);
+    delta += penalty;
     return delta;
 }
 
@@ -135,41 +160,6 @@ bool Swap(Solution &s, const Instance &instance) {
 
     return false;
 }
-// inline long CalcShiftReinsertionRemove(const Vertex &last, const Vertex &before, const Vertex &prox,
-//                                        const Instance &instance) {
-//
-//     const long set_delta =
-//         static_cast<long>(instance.setup_time(prox, before)) - static_cast<long>(instance.setup_time(prox, last));
-//
-//     const long delta_time = static_cast<long>(before.finish_time) - static_cast<long>(last.finish_time);
-//
-//     return set_delta + delta_time;
-// }
-
-inline std::pair<long, size_t> EvalRange2(size_t start_time, size_t begin, size_t end, const Vertex &real_behind,
-                                          const Solution &s, const Instance &instance) {
-    long delta = 0;
-
-    Vertex first = s.sequence[begin];
-    size_t finish_time_before = instance.setup_time(first, real_behind) + instance.process_time(first) + start_time;
-
-    delta -= static_cast<long>(s.sequence[begin].penalty);
-    if (finish_time_before > instance.deadline(first)) {
-        delta += static_cast<long>((finish_time_before - instance.deadline(first)) * instance.weight(first));
-    }
-
-    for (size_t i = begin + 1; i < end; i++) {
-        delta -= static_cast<long>(s.sequence[i].penalty);
-
-        auto [penalty, finish_time] =
-            instance.EvalVertexWithStart(s.sequence[i], s.sequence[i - 1], finish_time_before);
-        delta += static_cast<long>(penalty);
-
-        finish_time_before = finish_time;
-    }
-
-    return {delta, finish_time_before};
-}
 
 long EvalReinsertion(size_t i, size_t j, size_t block_size, const Solution &s, const Instance &instance) {
     long delta = 0;
@@ -177,12 +167,12 @@ long EvalReinsertion(size_t i, size_t j, size_t block_size, const Solution &s, c
     // Calculate Delta from the sequence that will be put behind the block new position
     const Vertex &v_before_block = s.sequence[i - 1];
     auto [penalty_back, finish_time_back] =
-        EvalRange2(v_before_block.finish_time, i + block_size, j + 1, v_before_block, s, instance);
+        EvalRange(v_before_block.finish_time, i + block_size, j + 1, v_before_block, s, instance);
     delta += penalty_back;
 
     // Calculate Delta from block in the new position
     auto [penalty_block, finish_time_block] =
-        EvalRange2(finish_time_back, i, i + block_size, s.sequence[j], s, instance);
+        EvalRange(finish_time_back, i, i + block_size, s.sequence[j], s, instance);
     delta += penalty_block;
 
     if (j == s.sequence.size() - 1) {
@@ -191,7 +181,7 @@ long EvalReinsertion(size_t i, size_t j, size_t block_size, const Solution &s, c
 
     // Calculate Delta from nodes in front of the insertion point of the block
     const Vertex &v_last_from_block = s.sequence[i + block_size - 1];
-    auto [penalty_front, _] = EvalRange2(finish_time_block, j + 1, s.sequence.size(), v_last_from_block, s, instance);
+    auto [penalty_front, _] = EvalRange(finish_time_block, j + 1, s.sequence.size(), v_last_from_block, s, instance);
     delta += penalty_front;
 
     return delta;
@@ -203,12 +193,12 @@ long EvalReinsertionBack(size_t i, size_t j, size_t block_size, const Solution &
     const Vertex &v_before = s.sequence[j - 1];
     // Calculate Delta from block in the new position
     auto [penalty_block, finish_time_block] =
-        EvalRange2(v_before.finish_time, i, i + block_size, v_before, s, instance);
+        EvalRange(v_before.finish_time, i, i + block_size, v_before, s, instance);
     delta += penalty_block;
 
     // Calculate Delta from nodes in front of the insertion point of the block
     const Vertex &v_last_from_block = s.sequence[i + block_size - 1];
-    auto [penalty_front, finish_time_a] = EvalRange2(finish_time_block, j, i, v_last_from_block, s, instance);
+    auto [penalty_front, finish_time_a] = EvalRange(finish_time_block, j, i, v_last_from_block, s, instance);
     delta += penalty_front;
 
 
@@ -219,7 +209,7 @@ long EvalReinsertionBack(size_t i, size_t j, size_t block_size, const Solution &
     // Calculate Delta from the sequence that will be put behind the block new position
     const Vertex &v_before_block = s.sequence[i - 1];
     auto [penalty_back, finish_time_back] =
-        EvalRange2(finish_time_a, i + block_size, s.sequence.size(), v_before_block, s, instance);
+        EvalRange(finish_time_a, i + block_size, s.sequence.size(), v_before_block, s, instance);
     delta += penalty_back;
 
     return delta;
