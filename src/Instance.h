@@ -38,8 +38,9 @@ class Instance {
         return (order.finish_time - deadline(order)) * weight(order);
     }
 
-    [[nodiscard]] size_t EvalVertex(const Vertex &order, const Vertex &order_behind, long shift = 0) const;
-    size_t CalculateVertex(Vertex &order, const Vertex &order_behind = Vertex::Departure()) const;
+    [[nodiscard]] std::size_t EvalVertex(const Vertex &order, const Vertex &order_behind, long shift = 0) const;
+    [[nodiscard]] std::pair<std::size_t, std::size_t> EvalVertexWithStart(const Vertex &order, const Vertex &order_behind, size_t start_time) const;
+    std::size_t CalculateVertex(Vertex &order, const Vertex &order_behind = Vertex::Departure()) const;
 
     [[nodiscard]] inline std::size_t size() const { return m_instance_size; }
 

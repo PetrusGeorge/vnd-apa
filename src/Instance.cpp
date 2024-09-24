@@ -84,6 +84,17 @@ Instance::Instance(const std::filesystem::path &filename) {
     }
 }
 
+std::pair<size_t, size_t> Instance::EvalVertexWithStart(const Vertex &order, const Vertex &order_behind, size_t start_time) const {
+
+    const size_t finish_time = setup_time(order, order_behind) + process_time(order) + start_time;
+
+    if (finish_time < deadline(order)) {
+        return {0, finish_time};
+    }
+
+    return {(finish_time - deadline(order)) * weight(order), finish_time};
+}
+
 size_t Instance::EvalVertex(const Vertex &order, const Vertex &order_behind, long shift) const {
 
     const size_t finish_time = setup_time(order, order_behind) + process_time(order) + order_behind.finish_time + shift;

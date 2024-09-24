@@ -135,44 +135,95 @@ bool Swap(Solution &s, const Instance &instance) {
 
     return false;
 }
+// inline long CalcShiftReinsertionRemove(const Vertex &last, const Vertex &before, const Vertex &prox,
+//                                        const Instance &instance) {
+//
+//     const long set_delta =
+//         static_cast<long>(instance.setup_time(prox, before)) - static_cast<long>(instance.setup_time(prox, last));
+//
+//     const long delta_time = static_cast<long>(before.finish_time) - static_cast<long>(last.finish_time);
+//
+//     return set_delta + delta_time;
+// }
 
-inline long CalcShiftReinsertionRemove(const Vertex &last, const Vertex &before, const Vertex &prox,
-                                       const Instance &instance) {
+inline std::pair<long, size_t> EvalRange2(size_t start_time, size_t begin, size_t end, const Vertex &real_behind,
+                                          const Solution &s, const Instance &instance) {
+    long delta = 0;
 
-    const long set_delta =
-        static_cast<long>(instance.setup_time(prox, before)) - static_cast<long>(instance.setup_time(prox, last));
+    Vertex first = s.sequence[begin];
+    size_t finish_time_before = instance.setup_time(first, real_behind) + instance.process_time(first) + start_time;
 
-    const long delta_time = static_cast<long>(before.finish_time) - static_cast<long>(last.finish_time);
+    delta -= static_cast<long>(s.sequence[begin].penalty);
+    if (finish_time_before > instance.deadline(first)) {
+        delta += static_cast<long>((finish_time_before - instance.deadline(first)) * instance.weight(first));
+    }
 
-    return set_delta + delta_time;
+    for (size_t i = begin + 1; i < end; i++) {
+        delta -= static_cast<long>(s.sequence[i].penalty);
+
+        auto [penalty, finish_time] =
+            instance.EvalVertexWithStart(s.sequence[i], s.sequence[i - 1], finish_time_before);
+        delta += static_cast<long>(penalty);
+
+        finish_time_before = finish_time;
+    }
+
+    return {delta, finish_time_before};
 }
 
 long EvalReinsertion(size_t i, size_t j, size_t block_size, const Solution &s, const Instance &instance) {
     long delta = 0;
 
-    // TODO: Burn this
-    const long shift1 = CalcShiftReinsertionRemove(s.sequence[i + block_size - 1], s.sequence[i - 1],
-                                                   s.sequence[i + block_size], instance);
-    delta += EvalRange(shift1, i + block_size, j + 1, s, instance);
+    // Calculate Delta from the sequence that will be put behind the block new position
+    const Vertex &v_before_block = s.sequence[i - 1];
+    auto [penalty_back, finish_time_back] =
+        EvalRange2(v_before_block.finish_time, i + block_size, j + 1, v_before_block, s, instance);
+    delta += penalty_back;
 
-    const long shift_block =
-        static_cast<long>(s.sequence[j].finish_time + shift1 + instance.setup_time(s.sequence[i], s.sequence[j]) -
-                          (s.sequence[i].finish_time - instance.process_time(s.sequence[i])));
-    delta += EvalRange(shift_block, i, i + block_size, s, instance);
+    // Calculate Delta from block in the new position
+    auto [penalty_block, finish_time_block] =
+        EvalRange2(finish_time_back, i, i + block_size, s.sequence[j], s, instance);
+    delta += penalty_block;
 
     if (j == s.sequence.size() - 1) {
         return delta;
     }
 
-    const long shift2 = static_cast<long>((s.sequence[i + block_size - 1].finish_time + shift_block +
-                                           instance.setup_time(s.sequence[j + 1], s.sequence[i + block_size - 1])) -
-                                          (s.sequence[j + 1].finish_time - instance.process_time(s.sequence[j + 1])));
-
-    delta += EvalRange(shift2, j + 1, s.sequence.size(), s, instance);
+    // Calculate Delta from nodes in front of the insertion point of the block
+    const Vertex &v_last_from_block = s.sequence[i + block_size - 1];
+    auto [penalty_front, _] = EvalRange2(finish_time_block, j + 1, s.sequence.size(), v_last_from_block, s, instance);
+    delta += penalty_front;
 
     return delta;
 }
 
+long EvalReinsertionBack(size_t i, size_t j, size_t block_size, const Solution &s, const Instance &instance) {
+    long delta = 0;
+
+    const Vertex &v_before = s.sequence[j - 1];
+    // Calculate Delta from block in the new position
+    auto [penalty_block, finish_time_block] =
+        EvalRange2(v_before.finish_time, i, i + block_size, v_before, s, instance);
+    delta += penalty_block;
+
+    // Calculate Delta from nodes in front of the insertion point of the block
+    const Vertex &v_last_from_block = s.sequence[i + block_size - 1];
+    auto [penalty_front, finish_time_a] = EvalRange2(finish_time_block, j, i, v_last_from_block, s, instance);
+    delta += penalty_front;
+
+
+    if (i == s.sequence.size() - block_size) {
+        return delta;
+    }
+
+    // Calculate Delta from the sequence that will be put behind the block new position
+    const Vertex &v_before_block = s.sequence[i - 1];
+    auto [penalty_back, finish_time_back] =
+        EvalRange2(finish_time_a, i + block_size, s.sequence.size(), v_before_block, s, instance);
+    delta += penalty_back;
+
+    return delta;
+}
 bool Reinsertion(Solution &s, size_t block_size, const Instance &instance) {
 
     long best_delta = 0;
@@ -192,18 +243,18 @@ bool Reinsertion(Solution &s, size_t block_size, const Instance &instance) {
         }
     }
 
-    // for (size_t i = 2; i < s.sequence.size() - block_size; i++) {
-    //     for (size_t j = 1; j < i; j++) {
-    //         const long delta = EvalSwap(i, j, s, instance);
-    //         assert(IsCorrect(delta, i, j, s, Searchs::REINSERTION, block_size));
-    //
-    //         if (delta < best_delta) {
-    //             best_i = i;
-    //             best_j = j;
-    //             best_delta = delta;
-    //         }
-    //     }
-    // }
+    for (size_t i = 2; i < s.sequence.size() - block_size; i++) {
+        for (size_t j = 1; j < i; j++) {
+            const long delta = EvalReinsertionBack(i, j,block_size, s, instance);
+            assert(IsCorrect(delta, i, j, s, block_size));
+
+            if (delta < best_delta) {
+                best_i = i;
+                best_j = j;
+                best_delta = delta;
+            }
+        }
+    }
 
     if (best_delta < 0) {
         s.ApplyReinsertion(best_i, best_j, block_size);
