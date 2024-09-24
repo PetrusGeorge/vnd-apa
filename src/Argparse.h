@@ -3,8 +3,9 @@
 
 #include <argparse/argparse.hpp>
 #include <memory>
+#include <string>
 #include <vector>
 
-std::unique_ptr<argparse::ArgumentParser> Parse(const std::vector<std::string>& args);
+std::unique_ptr<argparse::ArgumentParser> Parse(const std::vector<std::string> &args);
 
 #endif

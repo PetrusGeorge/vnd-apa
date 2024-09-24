@@ -1,14 +1,16 @@
 #include "Argparse.h"
 #include "argparse/argparse.hpp"
 #include <cstdlib>
+#include <iostream>
 #include <memory>
+#include <ostream>
+#include <stdexcept>
+#include <string>
 #include <vector>
 
 std::unique_ptr<argparse::ArgumentParser> Parse(const std::vector<std::string> &args) {
 
     auto parser = std::make_unique<argparse::ArgumentParser>("Apa");
-
-    // parser->add_argument("-n", "--name").help("Your name").required();
 
     parser->add_argument("instance").help("Instance path");
 
@@ -38,8 +40,7 @@ std::unique_ptr<argparse::ArgumentParser> Parse(const std::vector<std::string> &
     try {
         parser->parse_args(args);
     } catch (const std::runtime_error &err) {
-        std::cerr << err.what() << std::endl;
-        std::cerr << parser;
+        std::cerr << err.what() << '\n';
         exit(EXIT_FAILURE);
     }
 

@@ -9,6 +9,7 @@
 #include <cstdio>
 #include <iostream>
 #include <memory>
+#include <string>
 #include <vector>
 
 using std::size_t;
@@ -29,7 +30,6 @@ int main(int argc, char *argv[]) {
     // Set seed if given, Doesn't work well with threads
     if (auto op = parser->present<size_t>("-s")) {
         if (num_threads == 1) {
-            std::cout << *op << std::endl;
             rng::set_seed(*op);
         } else {
             std::cerr << "Warning: seed was ignored because multi threading is active\n";

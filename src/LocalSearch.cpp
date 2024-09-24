@@ -5,6 +5,7 @@
 
 #include <cassert>
 #include <cstddef>
+#include <cstdint>
 #include <cstdio>
 #include <iostream>
 #include <limits>
@@ -12,7 +13,7 @@
 
 using std::size_t;
 
-enum class Searchs : short { SWAP, REINSERTION_1, REINSERTION_2, REINSERTION_3 };
+enum class Searchs : std::uint8_t { SWAP, REINSERTION_1, REINSERTION_2, REINSERTION_3 };
 
 inline long EvalRange(long delta_time, size_t begin, size_t end, const Solution &s, const Instance &instance) {
     long delta = 0;
