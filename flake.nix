@@ -51,6 +51,8 @@
           gcc
           meson
           ninja
+          pkg-config
+          argparse
         ];
         mesonBuildType = "release";
       };

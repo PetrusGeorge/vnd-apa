@@ -12,6 +12,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 using std::size_t;
@@ -84,7 +85,8 @@ Instance::Instance(const std::filesystem::path &filename) {
     }
 }
 
-std::pair<size_t, size_t> Instance::EvalVertexWithStart(const Vertex &order, const Vertex &order_behind, size_t start_time) const {
+std::pair<size_t, size_t> Instance::EvalVertexWithStart(const Vertex &order, const Vertex &order_behind,
+                                                        size_t start_time) const {
 
     const size_t finish_time = setup_time(order, order_behind) + process_time(order) + start_time;
 

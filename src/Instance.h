@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <filesystem>
 #include <string>
+#include <utility>
 #include <vector>
 
 struct Vertex {
@@ -39,7 +40,8 @@ class Instance {
     }
 
     [[nodiscard]] std::size_t EvalVertex(const Vertex &order, const Vertex &order_behind, long shift = 0) const;
-    [[nodiscard]] std::pair<std::size_t, std::size_t> EvalVertexWithStart(const Vertex &order, const Vertex &order_behind, size_t start_time) const;
+    [[nodiscard]] std::pair<std::size_t, std::size_t>
+    EvalVertexWithStart(const Vertex &order, const Vertex &order_behind, size_t start_time) const;
     std::size_t CalculateVertex(Vertex &order, const Vertex &order_behind = Vertex::Departure()) const;
 
     [[nodiscard]] inline std::size_t size() const { return m_instance_size; }
