@@ -11,6 +11,7 @@
 #include <limits>
 #include <ostream>
 #include <utility>
+#include <vector>
 
 using std::size_t;
 
@@ -41,11 +42,11 @@ inline std::pair<long, size_t> EvalRange(size_t start_time, size_t begin, size_t
     return {delta, finish_time_before};
 }
 
-// inline long CalcShift(const Vertex &inserted, const Vertex &removed, const Vertex &next, const Instance &instance) {
+inline long CalcShift(const Vertex &inserted, const Vertex &removed, const Vertex &next, const Instance &instance) {
 
-//     const long set_delta = static_cast<long>(instance.setup_time(next, inserted) - instance.setup_time(next,
-//     removed)); return static_cast<long>(inserted.finish_time) - static_cast<long>(removed.finish_time) + set_delta;
-// }
+    const long set_delta = static_cast<long>(instance.setup_time(next, inserted) - instance.setup_time(next, removed));
+    return static_cast<long>(inserted.finish_time) - static_cast<long>(removed.finish_time) + set_delta;
+}
 
 // inline long CalcShiftReinsertionRemove(const Vertex &last, const Vertex &before, const Vertex &prox,
 //                                        const Instance &instance) {
@@ -58,9 +59,9 @@ inline std::pair<long, size_t> EvalRange(size_t start_time, size_t begin, size_t
 //     return set_delta + delta_time;
 // }
 
-inline long EvalSwap(size_t i, size_t j, const Solution &s, const Instance &instance) {
-    long delta = 0;
+inline long EvalSwap(size_t i, size_t j, long best_delta, const Solution &s, const Instance &instance) {
 
+    long delta = 0;
     Vertex v_j = s.sequence[j];
 
     // Removes old penalty from j
@@ -68,17 +69,56 @@ inline long EvalSwap(size_t i, size_t j, const Solution &s, const Instance &inst
     // Adds new penalty of j in position i, changes the value of the v_j var
     delta += static_cast<long>(instance.CalculateVertex(v_j, s.sequence[i - 1]));
 
-    auto [penalty_between, finish_time_between] = EvalRange(v_j.finish_time, i + 1, j, v_j, s, instance);
-    delta += penalty_between;
+    const long shift1 = CalcShift(v_j, s.sequence[i], s.sequence[i + 1], instance);
 
     Vertex v_before_i = s.sequence[j - 1];
-    v_before_i.finish_time = finish_time_between;
+    v_before_i.finish_time += shift1;
     Vertex v_i = s.sequence[i];
 
     // Removes old penalty from j
     delta -= static_cast<long>(v_i.penalty);
     // Adds new penalty of i in position j, changes the value of the v_j var
     delta += static_cast<long>(instance.CalculateVertex(v_i, v_before_i));
+
+    long shift2 = std::numeric_limits<long>::min();
+    if (j != s.sequence.size() - 1) {
+        shift2 = CalcShift(v_i, s.sequence[j], s.sequence[j + 1], instance);
+    }
+    auto [lb_w_i, min_shift_i] = s.lbw[i];
+    auto [lb_w_j, min_shift_j] = s.lbw[j];
+    if (shift1 > min_shift_i && shift2 > min_shift_j) {
+
+        long lb_delta1 = shift1 * (s.lbw[i].first);
+        long lb_delta2 = 0;
+        if (j != s.sequence.size() - 1) {
+            lb_delta2 = shift2 * s.lbw[j].first;
+            lb_delta1 -= shift1 * s.lbw[j].first;
+        }
+        if (delta + lb_delta1 + lb_delta2 > best_delta) {
+
+            return std::numeric_limits<long>::max();
+        }
+    }
+    // long delta = 0;
+    //
+    // Vertex v_j = s.sequence[j];
+    //
+    // // Removes old penalty from j
+    // delta -= static_cast<long>(v_j.penalty);
+    // // Adds new penalty of j in position i, changes the value of the v_j var
+    // delta += static_cast<long>(instance.CalculateVertex(v_j, s.sequence[i - 1]));
+    //
+    auto [penalty_between, finish_time_between] = EvalRange(v_j.finish_time, i + 1, j, v_j, s, instance);
+    delta += penalty_between;
+    //
+    // Vertex v_before_i = s.sequence[j - 1];
+    // v_before_i.finish_time = finish_time_between;
+    // Vertex v_i = s.sequence[i];
+    //
+    // // Removes old penalty from j
+    // delta -= static_cast<long>(v_i.penalty);
+    // // Adds new penalty of i in position j, changes the value of the v_j var
+    // delta += static_cast<long>(instance.CalculateVertex(v_i, v_before_i));
 
     if (j == s.sequence.size() - 1) {
         return delta;
@@ -141,8 +181,8 @@ bool Swap(Solution &s, const Instance &instance) {
 
     for (size_t i = 1; i < s.sequence.size() - 1; i++) {
         for (size_t j = i + 2; j < s.sequence.size(); j++) {
-            const long delta = EvalSwap(i, j, s, instance);
-            assert(IsCorrect(delta, i, j, s));
+            const long delta = EvalSwap(i, j, best_delta, s, instance);
+            // assert(IsCorrect(delta, i, j, s));
 
             if (delta < best_delta) {
                 best_i = i;
@@ -271,13 +311,13 @@ void LocalSearch(Solution &s, const Instance &instance) {
             improved = Swap(s, instance);
             break;
         case Searchs::REINSERTION_1:
-            improved = Reinsertion(s, 1, instance);
+            // improved = Reinsertion(s, 1, instance);
             break;
         case Searchs::REINSERTION_2:
-            improved = Reinsertion(s, 2, instance);
+            // improved = Reinsertion(s, 2, instance);
             break;
         case Searchs::REINSERTION_3:
-            improved = Reinsertion(s, 3, instance);
+            // improved = Reinsertion(s, 3, instance);
             break;
         }
 

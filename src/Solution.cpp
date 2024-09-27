@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include <ranges>
 #include <utility>
 
@@ -37,22 +38,32 @@ std::ostream &operator<<(std::ostream &os, const Solution &sol) {
     return os;
 }
 
+void Solution::PrintLBW() {
+    std::cout << *this;
+    std::cout << "lbw | min_shift\n";
+    for (auto [lbw, min_shift] : m_lbw) {
+
+        std::cout << lbw << " | " << min_shift << '\n';
+    }
+}
 Solution::Solution(const Instance &instance) : m_instance(instance) {}
 
 Solution::Solution(const Solution &other)
-    : m_instance(other.m_instance), m_sequence(other.m_sequence), m_cost(other.cost()) {
+    : m_instance(other.m_instance), m_sequence(other.m_sequence), m_lbw(other.m_lbw), m_cost(other.cost()) {
 
     assert(DebugCost() == m_cost);
 }
 
 Solution::Solution(Solution &&other) noexcept
-    : m_instance(other.m_instance), m_sequence(std::move(other.m_sequence)), m_cost(other.cost()) {
+    : m_instance(other.m_instance), m_sequence(std::move(other.m_sequence)), m_lbw(std::move(other.m_lbw)),
+      m_cost(other.cost()) {
 
     assert(DebugCost() == m_cost);
 }
 
 Solution &Solution::operator=(const Solution &other) {
     m_sequence = other.m_sequence;
+    m_lbw = other.m_lbw;
     m_cost = other.cost();
 
     assert(DebugCost() == m_cost);
@@ -62,6 +73,7 @@ Solution &Solution::operator=(const Solution &other) {
 
 Solution &Solution::operator=(Solution &&other) noexcept {
     m_sequence = std::move(other.m_sequence);
+    m_lbw = std::move(other.m_lbw);
     m_cost = other.cost();
     assert(DebugCost() == m_cost);
 
@@ -95,6 +107,7 @@ Solution::Solution(vector<Vertex> &&sequence, const Instance &instance)
 Solution::Solution(vector<Vertex> &&sequence, size_t cost, const Instance &instance)
     : m_instance(instance), m_sequence(std::move(sequence)), m_cost(cost) {
 
+    UpdateLBW();
     assert(DebugCost() == m_cost);
 }
 
@@ -119,6 +132,36 @@ void Solution::ApplyReinsertion(size_t i, size_t j, size_t block_size) {
     RecalculateCost();
 }
 
+void Solution::UpdateLBW() {
+
+    std::vector<std::pair<long, long>> lbw(m_instance.size());
+
+    if (m_sequence.back().penalty > 0) {
+        long w = static_cast<long>(m_instance.weight(m_sequence.back()));
+        long min_shift = static_cast<long>(m_instance.deadline(m_sequence.back())) -
+                         static_cast<long>(m_sequence.back().finish_time) + 1;
+        lbw.back() = {w, min_shift};
+    } else {
+        lbw.back() = {0, std::numeric_limits<long>::min()};
+    }
+
+    for (long i = static_cast<long>(lbw.size()) - 2; i >= 0; i--) {
+        auto [before_w, before_min_shift] = lbw[i + 1];
+
+        long min_shift = before_min_shift;
+        long w = before_w;
+
+        if (m_sequence[i + 1].penalty > 0) {
+            w += static_cast<long>(m_instance.weight(m_sequence[i + 1]));
+            min_shift =
+                static_cast<long>(std::max(m_instance.deadline(m_sequence[i + 1]) - m_sequence[i + 1].finish_time + 1,
+                                           static_cast<size_t>(min_shift)));
+        }
+        lbw[i] = {w, min_shift};
+    }
+    m_lbw = std::move(lbw);
+}
+
 void Solution::RecalculateCost() {
     assert(m_sequence.front().id == -1);
     m_cost = 0;
@@ -129,4 +172,5 @@ void Solution::RecalculateCost() {
 
         m_cost += m_instance.CalculateVertex(current, prev);
     }
+    UpdateLBW();
 }
