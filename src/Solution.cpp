@@ -117,6 +117,7 @@ void Solution::ApplySwap(size_t i, size_t j) {
     std::swap(m_sequence[i], m_sequence[j]);
     RecalculateCost();
 }
+
 void Solution::ApplyReinsertion(size_t i, size_t j, size_t block_size) {
 
     const long i_index = static_cast<long>(i);
@@ -130,6 +131,14 @@ void Solution::ApplyReinsertion(size_t i, size_t j, size_t block_size) {
         std::rotate(m_sequence.begin() + j_index, m_sequence.begin() + i_index, m_sequence.begin() + i_index + block);
     }
 
+    RecalculateCost();
+}
+
+void Solution::ApplyDoubleBridge(long i, long j, long block_size_i, long block_size_j) {
+
+    std::rotate(m_sequence.begin() + i, m_sequence.begin() + j, m_sequence.begin() + j + block_size_j);
+    std::rotate(m_sequence.begin() + i + block_size_j, m_sequence.begin() + i + block_size_i + block_size_j,
+                m_sequence.begin() + j + block_size_j);
     RecalculateCost();
 }
 

@@ -3,6 +3,7 @@
 #include "Solution.h"
 #include "Util.h"
 
+#include <algorithm>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
@@ -357,17 +358,41 @@ void LocalSearch(Solution &s, const Instance &instance) {
     }
 }
 
-[[nodiscard]] Solution Pertubation(Solution best, const Instance & /*instance*/) {
+[[nodiscard]] Solution Pertubation(Solution best_copy, const Instance & /*instance*/) {
 
-    // TODO: make a better pertubation
-    for (int i = 0; i < 3; i++) {
-        const size_t a = rng::rand_int(static_cast<size_t>(1), best.sequence.size() - 1);
-        size_t b = a;
-        while (a == b) {
-            b = rng::rand_int(static_cast<size_t>(1), best.sequence.size() - 1);
-        }
-        best.ApplySwap(a, b);
+    long block_size_i = 0;
+    long block_size_j = 0;
+    long size = static_cast<long>(best_copy.sequence.size()) - 1;
+    const long max_size = size / 10;
+
+    if (max_size > 2) {
+
+        block_size_i = rng::rand_int(static_cast<long>(2), max_size);
+        block_size_j = rng::rand_int(static_cast<long>(2), max_size);
+    } else {
+
+        block_size_i = block_size_j = 2;
     }
 
-    return best;
+    long i = rng::rand_int(static_cast<long>(1), size - block_size_i); // chosing a random subset1 end
+    long j = 0;
+
+    long possibilities_before_i = std::max(static_cast<long>(0), i - block_size_j);
+    long possibilities_after_i = std::max(static_cast<long>(0), size - (i + block_size_i - 1) - block_size_j + 1);
+    bool back =
+        rng::rand_int(static_cast<long>(1), possibilities_after_i + possibilities_before_i) <= possibilities_before_i;
+
+    if (back) {
+        j = rng::rand_int(static_cast<long>(1), possibilities_before_i);
+
+        // Ensures i < j
+        std::swap(block_size_i, block_size_j);
+        std::swap(i, j);
+    } else {
+        j = rng::rand_int(static_cast<long>(1), possibilities_after_i) + i + block_size_i - 1;
+    }
+
+    best_copy.ApplyDoubleBridge(i, j, block_size_i, block_size_j);
+
+    return best_copy;
 }
