@@ -70,10 +70,10 @@ inline std::optional<long> EvalSwap(size_t i, size_t j, long best_delta, const S
     // Adds new penalty of j in position i, changes the value of the v_j var
     delta += static_cast<long>(instance.CalculateVertex(v_j, s.sequence[i - 1]));
 
-    const long shift1 = CalcShift(v_j, s.sequence[i], s.sequence[i + 1], instance);
+    const long shift_after_i = CalcShift(v_j, s.sequence[i], s.sequence[i + 1], instance);
 
     Vertex v_before_i = s.sequence[j - 1];
-    v_before_i.finish_time += shift1;
+    v_before_i.finish_time += shift_after_i;
     Vertex v_i = s.sequence[i];
 
     // Removes old penalty from j
@@ -81,22 +81,22 @@ inline std::optional<long> EvalSwap(size_t i, size_t j, long best_delta, const S
     // Adds new penalty of i in position j, changes the value of the v_j var
     delta += static_cast<long>(instance.CalculateVertex(v_i, v_before_i));
 
-    long shift2 = 0;
+    long shift_after_j = 0;
     if (j != s.sequence.size() - 1) {
-        shift2 = CalcShift(v_i, s.sequence[j], s.sequence[j + 1], instance);
+        shift_after_j = CalcShift(v_i, s.sequence[j], s.sequence[j + 1], instance);
     }
 
     auto [lb_w_i, min_shift_i] = s.lbw[i];
     auto [lb_w_j, min_shift_j] = s.lbw[j];
 
-    if (shift1 > min_shift_i && shift2 > min_shift_j) {
+    if (shift_after_i > min_shift_i && shift_after_j > min_shift_j) {
 
-        long lb_delta1 = shift1 * (s.lbw[i + 1].first);
-        lb_delta1 -= shift1 * s.lbw[j].first;
+        long lb_delta1 = shift_after_i * (s.lbw[i + 1].first);
+        lb_delta1 -= shift_after_i * s.lbw[j].first;
 
         long lb_delta2 = 0;
         if (j != s.sequence.size() - 1) {
-            lb_delta2 = shift2 * s.lbw[j + 1].first;
+            lb_delta2 = shift_after_j * s.lbw[j + 1].first;
         }
 
         if (delta + lb_delta1 + lb_delta2 > best_delta) {
@@ -118,7 +118,7 @@ inline std::optional<long> EvalSwap(size_t i, size_t j, long best_delta, const S
     return delta;
 }
 
-inline long EvalSwapAdjacent(size_t i, const Solution &s, const Instance &instance) {
+inline std::optional<long> EvalSwapAdjacent(size_t i, long best_delta, const Solution &s, const Instance &instance) {
     const size_t j = i + 1;
     long delta = 0;
 
@@ -131,6 +131,25 @@ inline long EvalSwapAdjacent(size_t i, const Solution &s, const Instance &instan
     // Calculate the penalty delta of v_i node, alters the values of v_i
     delta -= static_cast<long>(v_i.penalty);
     delta += static_cast<long>(instance.CalculateVertex(v_i, v_j));
+
+    auto [lb_w_j, min_shift_j] = s.lbw[j];
+
+    long shift_after_j = 0;
+    if (j != s.sequence.size() - 1) {
+        shift_after_j = CalcShift(v_i, s.sequence[j], s.sequence[j + 1], instance);
+    }
+
+    if (shift_after_j > min_shift_j) {
+
+        long lb_delta = 0;
+        if (j != s.sequence.size() - 1) {
+            lb_delta = shift_after_j * s.lbw[j + 1].first;
+        }
+
+        if (delta + lb_delta > best_delta) {
+            return {};
+        }
+    }
 
     if (j == s.sequence.size() - 1) {
         return delta;
@@ -182,33 +201,33 @@ bool Swap(Solution &s, const Instance &instance) {
     size_t best_i = std::numeric_limits<size_t>::max();
     size_t best_j = std::numeric_limits<size_t>::max();
 
+    auto apply_if_better = [&](std::optional<long> delta, size_t i, size_t j) {
+        if (!delta) {
+            assert(IsWorse(best_delta, i, j, s));
+            return;
+        }
+
+        assert(IsCorrect(*delta, i, j, s));
+
+        if (*delta < best_delta) {
+            best_i = i;
+            best_j = j;
+            best_delta = *delta;
+        }
+    };
+
     for (size_t i = 1; i < s.sequence.size() - 1; i++) {
         for (size_t j = i + 2; j < s.sequence.size(); j++) {
             const std::optional<long> delta = EvalSwap(i, j, best_delta, s, instance);
 
-            if (!delta) {
-                assert(IsWorse(best_delta, i, j, s));
-                continue;
-            }
-
-            assert(IsCorrect(*delta, i, j, s));
-
-            if (*delta < best_delta) {
-                best_i = i;
-                best_j = j;
-                best_delta = *delta;
-            }
+            apply_if_better(delta, i, j);
         }
     }
 
     for (size_t i = 1; i < s.sequence.size() - 1; i++) {
-        const long delta = EvalSwapAdjacent(i, s, instance);
-        assert(IsCorrect(delta, i, i + 1, s));
-        if (delta < best_delta) {
-            best_i = i;
-            best_j = i + 1;
-            best_delta = delta;
-        }
+        const std::optional<long> delta = EvalSwapAdjacent(i, best_delta, s, instance);
+
+        apply_if_better(delta, i, i + 1);
     }
 
     if (best_delta < 0) {
@@ -320,13 +339,13 @@ void LocalSearch(Solution &s, const Instance &instance) {
             improved = Swap(s, instance);
             break;
         case Searchs::REINSERTION_1:
-            // improved = Reinsertion(s, 1, instance);
+            improved = Reinsertion(s, 1, instance);
             break;
         case Searchs::REINSERTION_2:
-            // improved = Reinsertion(s, 2, instance);
+            improved = Reinsertion(s, 2, instance);
             break;
         case Searchs::REINSERTION_3:
-            // improved = Reinsertion(s, 3, instance);
+            improved = Reinsertion(s, 3, instance);
             break;
         }
 

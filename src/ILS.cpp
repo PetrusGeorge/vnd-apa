@@ -62,12 +62,11 @@ Solution Construction(const Instance &instance) {
 
 Solution ILS(int max_iter, int max_iter_ils, int num_threads, const Instance &instance) {
 
-    // TODO: Clean this horrible working mess
     std::atomic<int> iter = 0;
     std::mutex mtx;
-    std::vector<std::thread> threads;
     Solution best_of_all(instance);
-    auto ils_lambda = [&iter, &best_of_all, &mtx, &instance, max_iter_ils, max_iter]() {
+
+    auto ils_lambda = [&]() {
         while (true) {
             if (iter++ >= max_iter) {
                 break;
@@ -96,12 +95,20 @@ Solution ILS(int max_iter, int max_iter_ils, int num_threads, const Instance &in
         }
     };
 
-    threads.reserve(num_threads);
-    for (int i = 0; i < num_threads; ++i) {
-        threads.emplace_back(ils_lambda);
-    }
-    for (auto &t : threads) {
-        t.join();
+    if (num_threads > 1) {
+        std::vector<std::thread> threads;
+        threads.reserve(num_threads);
+
+        for (int i = 0; i < num_threads; ++i) {
+            threads.emplace_back(ils_lambda);
+        }
+
+        for (auto &t : threads) {
+            t.join();
+        }
+    } else {
+        // Better debug without spawning a thread
+        ils_lambda();
     }
 
     return best_of_all;
