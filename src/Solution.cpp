@@ -9,6 +9,7 @@
 #include <limits>
 #include <ranges>
 #include <utility>
+#include <vector>
 
 using std::size_t;
 using std::vector;
@@ -134,12 +135,12 @@ void Solution::ApplyReinsertion(size_t i, size_t j, size_t block_size) {
 
 void Solution::UpdateLBW() {
 
-    std::vector<std::pair<long, long>> lbw(m_instance.size());
+    std::vector<std::pair<long, long>> lbw(m_instance.size() + 1);
 
     if (m_sequence.back().penalty > 0) {
-        long w = static_cast<long>(m_instance.weight(m_sequence.back()));
-        long min_shift = static_cast<long>(m_instance.deadline(m_sequence.back())) -
-                         static_cast<long>(m_sequence.back().finish_time) + 1;
+        const long w = static_cast<long>(m_instance.weight(m_sequence.back()));
+        const long min_shift = static_cast<long>(m_instance.deadline(m_sequence.back())) -
+                               static_cast<long>(m_sequence.back().finish_time) + 1;
         lbw.back() = {w, min_shift};
     } else {
         lbw.back() = {0, std::numeric_limits<long>::min()};
@@ -151,11 +152,10 @@ void Solution::UpdateLBW() {
         long min_shift = before_min_shift;
         long w = before_w;
 
-        if (m_sequence[i + 1].penalty > 0) {
-            w += static_cast<long>(m_instance.weight(m_sequence[i + 1]));
-            min_shift =
-                static_cast<long>(std::max(m_instance.deadline(m_sequence[i + 1]) - m_sequence[i + 1].finish_time + 1,
-                                           static_cast<size_t>(min_shift)));
+        if (m_sequence[i].penalty > 0) {
+            w += static_cast<long>(m_instance.weight(m_sequence[i]));
+            min_shift = static_cast<long>(std::max(m_instance.deadline(m_sequence[i]) - m_sequence[i].finish_time + 1,
+                                                   static_cast<size_t>(min_shift)));
         }
         lbw[i] = {w, min_shift};
     }

@@ -9,6 +9,7 @@
 #include <cstdio>
 #include <iostream>
 #include <limits>
+#include <optional>
 #include <ostream>
 #include <utility>
 #include <vector>
@@ -59,7 +60,7 @@ inline long CalcShift(const Vertex &inserted, const Vertex &removed, const Verte
 //     return set_delta + delta_time;
 // }
 
-inline long EvalSwap(size_t i, size_t j, long best_delta, const Solution &s, const Instance &instance) {
+inline std::optional<long> EvalSwap(size_t i, size_t j, long best_delta, const Solution &s, const Instance &instance) {
 
     long delta = 0;
     Vertex v_j = s.sequence[j];
@@ -80,45 +81,31 @@ inline long EvalSwap(size_t i, size_t j, long best_delta, const Solution &s, con
     // Adds new penalty of i in position j, changes the value of the v_j var
     delta += static_cast<long>(instance.CalculateVertex(v_i, v_before_i));
 
-    long shift2 = std::numeric_limits<long>::min();
+    long shift2 = 0;
     if (j != s.sequence.size() - 1) {
         shift2 = CalcShift(v_i, s.sequence[j], s.sequence[j + 1], instance);
     }
+
     auto [lb_w_i, min_shift_i] = s.lbw[i];
     auto [lb_w_j, min_shift_j] = s.lbw[j];
+
     if (shift1 > min_shift_i && shift2 > min_shift_j) {
 
-        long lb_delta1 = shift1 * (s.lbw[i].first);
+        long lb_delta1 = shift1 * (s.lbw[i + 1].first);
+        lb_delta1 -= shift1 * s.lbw[j].first;
+
         long lb_delta2 = 0;
         if (j != s.sequence.size() - 1) {
-            lb_delta2 = shift2 * s.lbw[j].first;
-            lb_delta1 -= shift1 * s.lbw[j].first;
+            lb_delta2 = shift2 * s.lbw[j + 1].first;
         }
-        if (delta + lb_delta1 + lb_delta2 > best_delta) {
 
-            return std::numeric_limits<long>::max();
+        if (delta + lb_delta1 + lb_delta2 > best_delta) {
+            return {};
         }
     }
-    // long delta = 0;
-    //
-    // Vertex v_j = s.sequence[j];
-    //
-    // // Removes old penalty from j
-    // delta -= static_cast<long>(v_j.penalty);
-    // // Adds new penalty of j in position i, changes the value of the v_j var
-    // delta += static_cast<long>(instance.CalculateVertex(v_j, s.sequence[i - 1]));
-    //
+
     auto [penalty_between, finish_time_between] = EvalRange(v_j.finish_time, i + 1, j, v_j, s, instance);
     delta += penalty_between;
-    //
-    // Vertex v_before_i = s.sequence[j - 1];
-    // v_before_i.finish_time = finish_time_between;
-    // Vertex v_i = s.sequence[i];
-    //
-    // // Removes old penalty from j
-    // delta -= static_cast<long>(v_i.penalty);
-    // // Adds new penalty of i in position j, changes the value of the v_j var
-    // delta += static_cast<long>(instance.CalculateVertex(v_i, v_before_i));
 
     if (j == s.sequence.size() - 1) {
         return delta;
@@ -156,7 +143,7 @@ inline long EvalSwapAdjacent(size_t i, const Solution &s, const Instance &instan
     return delta;
 }
 
-bool IsCorrect(size_t delta, size_t i, size_t j, Solution s, int block_size = -1) {
+bool IsCorrect(long delta, size_t i, size_t j, Solution s, int block_size = -1) {
     const size_t estimated = delta + s.cost();
 
     if (block_size == -1) {
@@ -173,6 +160,22 @@ bool IsCorrect(size_t delta, size_t i, size_t j, Solution s, int block_size = -1
     return s.DebugCost() == estimated;
 }
 
+bool IsWorse(long best_delta, size_t i, size_t j, const Solution &s) {
+
+    Solution s_b = s;
+    s_b.ApplySwap(i, j);
+
+    if (static_cast<long>(s_b.cost()) - static_cast<long>(s.cost()) < best_delta) {
+        std::cout << s;
+        std::cout << s_b;
+        std::cout << i << ' ' << j << '\n';
+        std::cout << best_delta << '\n';
+        return false;
+    }
+
+    return true;
+}
+
 bool Swap(Solution &s, const Instance &instance) {
 
     long best_delta = 0;
@@ -181,13 +184,19 @@ bool Swap(Solution &s, const Instance &instance) {
 
     for (size_t i = 1; i < s.sequence.size() - 1; i++) {
         for (size_t j = i + 2; j < s.sequence.size(); j++) {
-            const long delta = EvalSwap(i, j, best_delta, s, instance);
-            // assert(IsCorrect(delta, i, j, s));
+            const std::optional<long> delta = EvalSwap(i, j, best_delta, s, instance);
 
-            if (delta < best_delta) {
+            if (!delta) {
+                assert(IsWorse(best_delta, i, j, s));
+                continue;
+            }
+
+            assert(IsCorrect(*delta, i, j, s));
+
+            if (*delta < best_delta) {
                 best_i = i;
                 best_j = j;
-                best_delta = delta;
+                best_delta = *delta;
             }
         }
     }
