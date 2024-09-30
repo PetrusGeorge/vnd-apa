@@ -50,17 +50,6 @@ inline long CalcShift(const Vertex &inserted, const Vertex &removed, const Verte
     return static_cast<long>(inserted.finish_time) - static_cast<long>(removed.finish_time) + set_delta;
 }
 
-// inline long CalcShiftReinsertionRemove(const Vertex &last, const Vertex &before, const Vertex &prox,
-//                                        const Instance &instance) {
-//
-//     const long set_delta =
-//         static_cast<long>(instance.setup_time(prox, before)) - static_cast<long>(instance.setup_time(prox, last));
-//
-//     const long delta_time = static_cast<long>(before.finish_time) - static_cast<long>(last.finish_time);
-//
-//     return set_delta + delta_time;
-// }
-
 inline std::optional<long> EvalSwap(size_t i, size_t j, long best_delta, const Solution &s, const Instance &instance) {
 
     long delta = 0;
@@ -83,22 +72,21 @@ inline std::optional<long> EvalSwap(size_t i, size_t j, long best_delta, const S
     delta += static_cast<long>(instance.CalculateVertex(v_i, v_before_i));
 
     long shift_after_j = 0;
+    long lb_w_after_j = 0;
+    long min_shift_after_j = std::numeric_limits<long>::min();
     if (j != s.sequence.size() - 1) {
         shift_after_j = CalcShift(v_i, s.sequence[j], s.sequence[j + 1], instance);
+        std::tie(lb_w_after_j, min_shift_after_j) = s.lbw[j + 1];
     }
 
-    auto [lb_w_i, min_shift_i] = s.lbw[i];
-    auto [lb_w_j, min_shift_j] = s.lbw[j];
+    auto [lb_w_after_i, min_shift_after_i] = s.lbw[i + 1];
 
-    if (shift_after_i > min_shift_i && shift_after_j > min_shift_j) {
+    if (shift_after_i > min_shift_after_i && shift_after_j > min_shift_after_j) {
 
-        long lb_delta1 = shift_after_i * (s.lbw[i + 1].first);
+        long lb_delta1 = shift_after_i * lb_w_after_i;
         lb_delta1 -= shift_after_i * s.lbw[j].first;
 
-        long lb_delta2 = 0;
-        if (j != s.sequence.size() - 1) {
-            lb_delta2 = shift_after_j * s.lbw[j + 1].first;
-        }
+        long lb_delta2 = shift_after_j * lb_w_after_j;
 
         if (delta + lb_delta1 + lb_delta2 > best_delta) {
             return {};
@@ -133,19 +121,17 @@ inline std::optional<long> EvalSwapAdjacent(size_t i, long best_delta, const Sol
     delta -= static_cast<long>(v_i.penalty);
     delta += static_cast<long>(instance.CalculateVertex(v_i, v_j));
 
-    auto [lb_w_j, min_shift_j] = s.lbw[j];
-
     long shift_after_j = 0;
+    long lb_w_j = 0;
+    long min_shift_j = std::numeric_limits<long>::min();
     if (j != s.sequence.size() - 1) {
         shift_after_j = CalcShift(v_i, s.sequence[j], s.sequence[j + 1], instance);
+        std::tie(lb_w_j, min_shift_j) = s.lbw[j + 1];
     }
 
     if (shift_after_j > min_shift_j) {
 
-        long lb_delta = 0;
-        if (j != s.sequence.size() - 1) {
-            lb_delta = shift_after_j * s.lbw[j + 1].first;
-        }
+        long lb_delta = shift_after_j * lb_w_j;
 
         if (delta + lb_delta > best_delta) {
             return {};
@@ -180,10 +166,14 @@ bool IsCorrect(long delta, size_t i, size_t j, Solution s, int block_size = -1) 
     return s.DebugCost() == estimated;
 }
 
-bool IsWorse(long best_delta, size_t i, size_t j, const Solution &s) {
+bool IsWorse(long best_delta, size_t i, size_t j, const Solution &s, int block_size = -1) {
 
     Solution s_b = s;
-    s_b.ApplySwap(i, j);
+    if (block_size == -1) {
+        s_b.ApplySwap(i, j);
+    } else {
+        s_b.ApplyReinsertion(i, j, block_size);
+    }
 
     if (static_cast<long>(s_b.cost()) - static_cast<long>(s.cost()) < best_delta) {
         std::cout << s;
@@ -202,7 +192,7 @@ bool Swap(Solution &s, const Instance &instance) {
     size_t best_i = std::numeric_limits<size_t>::max();
     size_t best_j = std::numeric_limits<size_t>::max();
 
-    auto apply_if_better = [&](std::optional<long> delta, size_t i, size_t j) {
+    auto save_if_better = [&](std::optional<long> delta, size_t i, size_t j) {
         if (!delta) {
             assert(IsWorse(best_delta, i, j, s));
             return;
@@ -221,14 +211,14 @@ bool Swap(Solution &s, const Instance &instance) {
         for (size_t j = i + 2; j < s.sequence.size(); j++) {
             const std::optional<long> delta = EvalSwap(i, j, best_delta, s, instance);
 
-            apply_if_better(delta, i, j);
+            save_if_better(delta, i, j);
         }
     }
 
     for (size_t i = 1; i < s.sequence.size() - 1; i++) {
         const std::optional<long> delta = EvalSwapAdjacent(i, best_delta, s, instance);
 
-        apply_if_better(delta, i, i + 1);
+        save_if_better(delta, i, i + 1);
     }
 
     if (best_delta < 0) {
@@ -239,19 +229,77 @@ bool Swap(Solution &s, const Instance &instance) {
     return false;
 }
 
-long EvalReinsertion(size_t i, size_t j, size_t block_size, const Solution &s, const Instance &instance) {
+inline long CalcShiftReinsertionRemove(const Vertex &last_block, const Vertex &before_block, const Vertex &after_block,
+                                       const Instance &instance) {
+    const long set_delta = static_cast<long>(instance.setup_time(after_block, before_block)) -
+                           static_cast<long>(instance.setup_time(after_block, last_block));
+
+    const long delta_time = static_cast<long>(before_block.finish_time) - static_cast<long>(last_block.finish_time);
+
+    return set_delta + delta_time;
+}
+
+inline long CalcShiftReinsertion(const Vertex &last_block, const Vertex &before, const Vertex &prox,
+                                 const Instance &instance) {
+
+    const long set_delta =
+        static_cast<long>(instance.setup_time(prox, last_block)) - static_cast<long>(instance.setup_time(prox, before));
+
+    const long delta_time = static_cast<long>(last_block.finish_time) - static_cast<long>(before.finish_time);
+
+    return set_delta + delta_time;
+}
+
+std::optional<long> EvalReinsertion(size_t i, size_t j, size_t block_size, long best_delta, const Solution &s,
+                                    const Instance &instance) {
     long delta = 0;
+
+    const Vertex &v_before_i = s.sequence[i - 1];
+    const Vertex &v_after_block = s.sequence[i + block_size];
+    Vertex v_last_block = s.sequence[i + block_size - 1];
+
+    const long shift_between = CalcShiftReinsertionRemove(v_last_block, v_before_i, v_after_block, instance);
+
+    // Calculate Delta from block in the new position
+    auto [penalty_block, finish_time_block] =
+        EvalRange(s.sequence[j].finish_time + shift_between, i, i + block_size, s.sequence[j], s, instance);
+    delta += penalty_block;
+
+    v_last_block.finish_time = finish_time_block;
+
+    long shift_after = 0;
+    long lb_w_after = 0;
+    long min_shift_after = std::numeric_limits<long>::min();
+    if (j != s.sequence.size() - 1) {
+
+        shift_after = CalcShiftReinsertion(v_last_block, s.sequence[j], s.sequence[j + 1], instance) + shift_between;
+
+        std::tie(lb_w_after, min_shift_after) = s.lbw[j + 1];
+    }
+
+    auto [lb_w_between, min_shift_between] = s.lbw[i + block_size];
+
+    if (shift_between > min_shift_between && shift_after > min_shift_after) {
+
+        long lb_delta1 = shift_between * lb_w_between;
+        lb_delta1 -= shift_between * s.lbw[j].first;
+
+        long lb_delta2 = shift_after * lb_w_after;
+
+        if (delta + lb_delta1 + lb_delta2 > best_delta) {
+            std::cout << "\nBlock size: " << block_size << '\n';
+            std::cout << "Shift between: " << shift_between << ", Shift after: " << shift_after << '\n';
+            std::cout << "Delta: " << delta << ", lb delta 1: " << lb_delta1 << ", lb delta 2: " << lb_delta2 << '\n';
+
+            return {};
+        }
+    }
 
     // Calculate Delta from the sequence that will be put behind the block new position
     const Vertex &v_before_block = s.sequence[i - 1];
     auto [penalty_back, finish_time_back] =
         EvalRange(v_before_block.finish_time, i + block_size, j + 1, v_before_block, s, instance);
     delta += penalty_back;
-
-    // Calculate Delta from block in the new position
-    auto [penalty_block, finish_time_block] =
-        EvalRange(finish_time_back, i, i + block_size, s.sequence[j], s, instance);
-    delta += penalty_block;
 
     if (j == s.sequence.size() - 1) {
         return delta;
@@ -265,13 +313,46 @@ long EvalReinsertion(size_t i, size_t j, size_t block_size, const Solution &s, c
     return delta;
 }
 
-long EvalReinsertionBack(size_t i, size_t j, size_t block_size, const Solution &s, const Instance &instance) {
+std::optional<long> EvalReinsertionBack(size_t i, size_t j, size_t block_size, long best_delta, const Solution &s,
+                                        const Instance &instance) {
     long delta = 0;
 
-    const Vertex &v_before = s.sequence[j - 1];
+    const Vertex &v_before_j = s.sequence[j - 1];
     // Calculate Delta from block in the new position
-    auto [penalty_block, finish_time_block] = EvalRange(v_before.finish_time, i, i + block_size, v_before, s, instance);
+    auto [penalty_block, finish_time_block] =
+        EvalRange(v_before_j.finish_time, i, i + block_size, v_before_j, s, instance);
     delta += penalty_block;
+
+    const Vertex &v_j = s.sequence[j];
+    Vertex v_last_block = s.sequence[i + block_size - 1];
+    v_last_block.finish_time = finish_time_block;
+
+    const long shift_j = CalcShiftReinsertion(v_last_block, v_before_j, v_j, instance);
+
+    long shift_after_block = 0;
+    long lb_w_after_block = 0;
+    long min_shift_after_block = std::numeric_limits<long>::min();
+    if (i != s.sequence.size() - block_size) {
+
+        shift_after_block = CalcShiftReinsertionRemove(s.sequence[i + block_size - 1], s.sequence[i - 1],
+                                                       s.sequence[i + block_size], instance) +
+                            shift_j;
+        std::tie(lb_w_after_block, min_shift_after_block) = s.lbw[i + block_size];
+    }
+
+    auto [lb_w_j, min_shift_j] = s.lbw[j];
+
+    if (shift_j > min_shift_j && shift_after_block > min_shift_after_block) {
+
+        long lb_delta1 = shift_j * lb_w_j;
+        lb_delta1 -= shift_j * s.lbw[i].first;
+
+        long lb_delta2 = shift_after_block * lb_w_after_block;
+
+        if (delta + lb_delta1 + lb_delta2 > best_delta) {
+            return {};
+        }
+    }
 
     // Calculate Delta from nodes in front of the insertion point of the block
     const Vertex &v_last_from_block = s.sequence[i + block_size - 1];
@@ -290,35 +371,41 @@ long EvalReinsertionBack(size_t i, size_t j, size_t block_size, const Solution &
 
     return delta;
 }
+
 bool Reinsertion(Solution &s, size_t block_size, const Instance &instance) {
 
     long best_delta = 0;
     size_t best_i = std::numeric_limits<size_t>::max();
     size_t best_j = std::numeric_limits<size_t>::max();
 
+    auto save_if_better = [&](std::optional<long> delta, size_t i, size_t j, size_t block_size) {
+        if (!delta) {
+            assert(IsWorse(best_delta, i, j, s, block_size));
+            return;
+        }
+
+        assert(IsCorrect(*delta, i, j, s, block_size));
+
+        if (*delta < best_delta) {
+            best_i = i;
+            best_j = j;
+            best_delta = *delta;
+        }
+    };
+
     for (size_t i = 1; i < s.sequence.size() - block_size; i++) {
         for (size_t j = i + block_size; j < s.sequence.size(); j++) {
-            const long delta = EvalReinsertion(i, j, block_size, s, instance);
-            assert(IsCorrect(delta, i, j, s, block_size));
+            const std::optional<long> delta = EvalReinsertion(i, j, block_size, best_delta, s, instance);
 
-            if (delta < best_delta) {
-                best_i = i;
-                best_j = j;
-                best_delta = delta;
-            }
+            save_if_better(delta, i, j, block_size);
         }
     }
 
     for (size_t i = 2; i < s.sequence.size() - block_size; i++) {
         for (size_t j = 1; j < i; j++) {
-            const long delta = EvalReinsertionBack(i, j, block_size, s, instance);
-            assert(IsCorrect(delta, i, j, s, block_size));
+            const std::optional<long> delta = EvalReinsertionBack(i, j, block_size, best_delta, s, instance);
 
-            if (delta < best_delta) {
-                best_i = i;
-                best_j = j;
-                best_delta = delta;
-            }
+            save_if_better(delta, i, j, block_size);
         }
     }
 
@@ -362,7 +449,7 @@ void LocalSearch(Solution &s, const Instance &instance) {
 
     long block_size_i = 0;
     long block_size_j = 0;
-    long size = static_cast<long>(best_copy.sequence.size()) - 1;
+    const long size = static_cast<long>(best_copy.sequence.size()) - 1;
     const long max_size = size / 10;
 
     if (max_size > 2) {
@@ -377,9 +464,9 @@ void LocalSearch(Solution &s, const Instance &instance) {
     long i = rng::rand_int(static_cast<long>(1), size - block_size_i); // chosing a random subset1 end
     long j = 0;
 
-    long possibilities_before_i = std::max(static_cast<long>(0), i - block_size_j);
-    long possibilities_after_i = std::max(static_cast<long>(0), size - (i + block_size_i - 1) - block_size_j + 1);
-    bool back =
+    const long possibilities_before_i = std::max(static_cast<long>(0), i - block_size_j);
+    const long possibilities_after_i = std::max(static_cast<long>(0), size - (i + block_size_i - 1) - block_size_j + 1);
+    const bool back =
         rng::rand_int(static_cast<long>(1), possibilities_after_i + possibilities_before_i) <= possibilities_before_i;
 
     if (back) {

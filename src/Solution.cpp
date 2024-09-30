@@ -14,6 +14,8 @@
 using std::size_t;
 using std::vector;
 
+namespace rv = std::ranges::views;
+
 std::ostream &operator<<(std::ostream &os, const Solution &sol) {
     const int id_width = 10;
     const int finish_time_width = 15;
@@ -30,7 +32,7 @@ std::ostream &operator<<(std::ostream &os, const Solution &sol) {
     os << std::setfill(' ');
 
     // Rows
-    for (const auto &order : sol.sequence | std::ranges::views::drop(1)) {
+    for (const auto &order : sol.sequence | rv::drop(1)) {
         os << std::setw(id_width) << order.id << std::setw(finish_time_width) << order.finish_time
            << std::setw(penalty_width) << order.penalty << '\n';
     }
@@ -47,6 +49,15 @@ void Solution::PrintLBW() {
         std::cout << lbw << " | " << min_shift << '\n';
     }
 }
+
+void Solution::ToFile() const {
+    for (const auto &order : m_sequence | rv::take(m_sequence.size() - 1) | rv::drop(1)) {
+        std::cout << order.id + 1 << ',';
+    }
+    std::cout << m_sequence.back().id + 1 << '\n';
+    std::cout << m_cost << '\n';
+}
+
 Solution::Solution(const Instance &instance) : m_instance(instance) {}
 
 Solution::Solution(const Solution &other)

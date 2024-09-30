@@ -38,5 +38,6 @@ int main(int argc, char *argv[]) {
 
     const Solution result = ILS(max_iter, max_iter_ils, num_threads, instance);
 
-    std::cout << result << '\n';
+    // std::cout << result << '\n';
+    result.ToFile();
 }

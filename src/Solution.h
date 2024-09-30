@@ -28,6 +28,7 @@ class Solution {
     void ApplySwap(std::size_t i, std::size_t j);
     void ApplyReinsertion(std::size_t i, std::size_t j, std::size_t block_size);
     void ApplyDoubleBridge(long i, long j, long block_size_i, long block_size_j);
+    void ToFile() const;
 
     // NOTE: read only access to private member
     const std::vector<Vertex> &sequence = m_sequence;
