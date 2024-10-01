@@ -263,7 +263,7 @@ std::optional<long> EvalReinsertion(size_t i, size_t j, size_t block_size, long 
     long lb_w_after = 0;
     if (j != s.sequence.size() - 1) {
 
-        shift_after = CalcShiftReinsertion(v_last_block, s.sequence[j], s.sequence[j + 1], instance) + shift_between;
+        shift_after = CalcShiftReinsertion(v_last_block, s.sequence[j], s.sequence[j + 1], instance);
 
         lb_w_after = s.lbw[j + 1];
     }
@@ -397,7 +397,6 @@ bool Reinsertion(Solution &s, size_t block_size, const Instance &instance) {
 
     return false;
 }
-
 void LocalSearch(Solution &s, const Instance &instance) {
     std::vector searchs = {Searchs::SWAP, Searchs::REINSERTION_1, Searchs::REINSERTION_2, Searchs::REINSERTION_3, Searchs::REINSERTION_4, Searchs::REINSERTION_5, Searchs::REINSERTION_6, Searchs::REINSERTION_7, Searchs::REINSERTION_8,Searchs::REINSERTION_9, Searchs::REINSERTION_10,Searchs::REINSERTION_11, Searchs::REINSERTION_12,Searchs::REINSERTION_13};
     while (!searchs.empty()) {
