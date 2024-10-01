@@ -17,7 +17,7 @@
 
 using std::size_t;
 
-enum class Searchs : std::uint8_t { SWAP, REINSERTION_1, REINSERTION_2, REINSERTION_3 };
+enum class Searchs : std::uint8_t {SWAP,REINSERTION_1,REINSERTION_2,REINSERTION_3,REINSERTION_4,REINSERTION_5,REINSERTION_6,REINSERTION_7,REINSERTION_8,REINSERTION_9,REINSERTION_10,REINSERTION_11,REINSERTION_12,REINSERTION_13};
 
 inline std::pair<long, size_t> EvalRange(size_t start_time, size_t begin, size_t end, const Vertex &real_behind,
                                          const Solution &s, const Instance &instance) {
@@ -73,24 +73,20 @@ inline std::optional<long> EvalSwap(size_t i, size_t j, long best_delta, const S
 
     long shift_after_j = 0;
     long lb_w_after_j = 0;
-    long min_shift_after_j = std::numeric_limits<long>::min();
     if (j != s.sequence.size() - 1) {
         shift_after_j = CalcShift(v_i, s.sequence[j], s.sequence[j + 1], instance);
-        std::tie(lb_w_after_j, min_shift_after_j) = s.lbw[j + 1];
+        lb_w_after_j = s.lbw[j + 1];
     }
 
-    auto [lb_w_after_i, min_shift_after_i] = s.lbw[i + 1];
+    long lb_w_after_i = s.lbw[i + 1];
 
-    if (shift_after_i > min_shift_after_i && shift_after_j > min_shift_after_j) {
+    long lb_delta1 = shift_after_i * lb_w_after_i;
+    lb_delta1 -= shift_after_i * s.lbw[j];
 
-        long lb_delta1 = shift_after_i * lb_w_after_i;
-        lb_delta1 -= shift_after_i * s.lbw[j].first;
+    long lb_delta2 = shift_after_j * lb_w_after_j;
 
-        long lb_delta2 = shift_after_j * lb_w_after_j;
-
-        if (delta + lb_delta1 + lb_delta2 > best_delta) {
-            return {};
-        }
+    if (delta + lb_delta1 + lb_delta2 > best_delta) {
+        return {};
     }
 
     auto [penalty_between, finish_time_between] = EvalRange(v_j.finish_time, i + 1, j, v_j, s, instance);
@@ -123,19 +119,15 @@ inline std::optional<long> EvalSwapAdjacent(size_t i, long best_delta, const Sol
 
     long shift_after_j = 0;
     long lb_w_j = 0;
-    long min_shift_j = std::numeric_limits<long>::min();
     if (j != s.sequence.size() - 1) {
         shift_after_j = CalcShift(v_i, s.sequence[j], s.sequence[j + 1], instance);
-        std::tie(lb_w_j, min_shift_j) = s.lbw[j + 1];
+        lb_w_j = s.lbw[j + 1];
     }
 
-    if (shift_after_j > min_shift_j) {
+    long lb_delta = shift_after_j * lb_w_j;
 
-        long lb_delta = shift_after_j * lb_w_j;
-
-        if (delta + lb_delta > best_delta) {
-            return {};
-        }
+    if (delta + lb_delta > best_delta) {
+        return {};
     }
 
     if (j == s.sequence.size() - 1) {
@@ -269,29 +261,23 @@ std::optional<long> EvalReinsertion(size_t i, size_t j, size_t block_size, long 
 
     long shift_after = 0;
     long lb_w_after = 0;
-    long min_shift_after = std::numeric_limits<long>::min();
     if (j != s.sequence.size() - 1) {
 
         shift_after = CalcShiftReinsertion(v_last_block, s.sequence[j], s.sequence[j + 1], instance) + shift_between;
 
-        std::tie(lb_w_after, min_shift_after) = s.lbw[j + 1];
+        lb_w_after = s.lbw[j + 1];
     }
 
-    auto [lb_w_between, min_shift_between] = s.lbw[i + block_size];
-    
-    if (shift_between > min_shift_between && shift_after > min_shift_after) {
+    long lb_w_between = s.lbw[i + block_size];
+    long lb_delta1 = shift_between * lb_w_between;
+    if (j != s.sequence.size() - 1) {
+        lb_delta1 -= shift_between * s.lbw[j + 1];
+    }
 
-        long lb_delta1 = shift_between * lb_w_between;
-        if(j != s.sequence.size() - 1)
-        {
-            lb_delta1 -= shift_between * s.lbw[j+1].first;
-        }
+    long lb_delta2 = shift_after * lb_w_after;
 
-        long lb_delta2 = shift_after * lb_w_after;
-
-        if (delta + lb_delta1 + lb_delta2 > best_delta) {
-            return {};
-        }
+    if (delta + lb_delta1 + lb_delta2 > best_delta) {
+        return {};
     }
 
     // Calculate Delta from the sequence that will be put behind the block new position
@@ -330,27 +316,23 @@ std::optional<long> EvalReinsertionBack(size_t i, size_t j, size_t block_size, l
 
     long shift_after_block = 0;
     long lb_w_after_block = 0;
-    long min_shift_after_block = std::numeric_limits<long>::min();
     if (i != s.sequence.size() - block_size) {
 
         shift_after_block = CalcShiftReinsertionRemove(s.sequence[i + block_size - 1], s.sequence[i - 1],
                                                        s.sequence[i + block_size], instance) +
                             shift_j;
-        std::tie(lb_w_after_block, min_shift_after_block) = s.lbw[i + block_size];
+        lb_w_after_block = s.lbw[i + block_size];
     }
 
-    auto [lb_w_j, min_shift_j] = s.lbw[j];
+    long lb_w_j = s.lbw[j];
 
-    if (shift_j > min_shift_j && shift_after_block > min_shift_after_block) {
+    long lb_delta1 = shift_j * lb_w_j;
+    lb_delta1 -= shift_j * s.lbw[i];
 
-        long lb_delta1 = shift_j * lb_w_j;
-        lb_delta1 -= shift_j * s.lbw[i].first;
+    long lb_delta2 = shift_after_block * lb_w_after_block;
 
-        long lb_delta2 = shift_after_block * lb_w_after_block;
-
-        if (delta + lb_delta1 + lb_delta2 > best_delta) {
-            return {};
-        }
+    if (delta + lb_delta1 + lb_delta2 > best_delta) {
+        return {};
     }
 
     // Calculate Delta from nodes in front of the insertion point of the block
@@ -417,7 +399,7 @@ bool Reinsertion(Solution &s, size_t block_size, const Instance &instance) {
 }
 
 void LocalSearch(Solution &s, const Instance &instance) {
-    std::vector searchs = {Searchs::SWAP, Searchs::REINSERTION_1, Searchs::REINSERTION_2, Searchs::REINSERTION_3};
+    std::vector searchs = {Searchs::SWAP, Searchs::REINSERTION_1, Searchs::REINSERTION_2, Searchs::REINSERTION_3, Searchs::REINSERTION_4, Searchs::REINSERTION_5, Searchs::REINSERTION_6, Searchs::REINSERTION_7, Searchs::REINSERTION_8,Searchs::REINSERTION_9, Searchs::REINSERTION_10,Searchs::REINSERTION_11, Searchs::REINSERTION_12,Searchs::REINSERTION_13};
     while (!searchs.empty()) {
         bool improved = false;
         auto chose = rng::pick_iter(searchs.begin(), searchs.end());
@@ -434,10 +416,40 @@ void LocalSearch(Solution &s, const Instance &instance) {
         case Searchs::REINSERTION_3:
             improved = Reinsertion(s, 3, instance);
             break;
+        case Searchs::REINSERTION_4:
+            improved = Reinsertion(s, 4, instance);
+            break;
+        case Searchs::REINSERTION_5:
+            improved = Reinsertion(s, 5, instance);
+            break;
+        case Searchs::REINSERTION_6:
+            improved = Reinsertion(s, 6, instance);
+            break;
+        case Searchs::REINSERTION_7:
+            improved = Reinsertion(s, 7, instance);
+            break;
+        case Searchs::REINSERTION_8:
+            improved = Reinsertion(s, 8, instance);
+            break;
+        case Searchs::REINSERTION_9:
+            improved = Reinsertion(s, 9, instance);
+            break;
+        case Searchs::REINSERTION_10:
+            improved = Reinsertion(s, 10, instance);
+            break;
+        case Searchs::REINSERTION_11:
+            improved = Reinsertion(s, 11, instance);
+            break;
+        case Searchs::REINSERTION_12:
+            improved = Reinsertion(s, 12, instance);
+            break;
+        case Searchs::REINSERTION_13:
+            improved = Reinsertion(s, 13, instance);
+            break;
         }
 
         if (improved) {
-            searchs = {Searchs::SWAP, Searchs::REINSERTION_1, Searchs::REINSERTION_2, Searchs::REINSERTION_3};
+            searchs = {Searchs::SWAP, Searchs::REINSERTION_1, Searchs::REINSERTION_2, Searchs::REINSERTION_3, Searchs::REINSERTION_4, Searchs::REINSERTION_5, Searchs::REINSERTION_6, Searchs::REINSERTION_7, Searchs::REINSERTION_8,Searchs::REINSERTION_9, Searchs::REINSERTION_10,Searchs::REINSERTION_11, Searchs::REINSERTION_12,Searchs::REINSERTION_13};
             continue;
         }
         searchs.erase(chose);

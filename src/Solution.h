@@ -32,7 +32,7 @@ class Solution {
 
     // NOTE: read only access to private member
     const std::vector<Vertex> &sequence = m_sequence;
-    const std::vector<std::pair<long, long>> &lbw = m_lbw;
+    const std::vector<long> &lbw = m_lbw;
     std::size_t DebugCost();
     void PrintLBW();
 
@@ -42,7 +42,7 @@ class Solution {
 
     const Instance &m_instance;
     std::vector<Vertex> m_sequence;
-    std::vector<std::pair<long, long>> m_lbw;
+    std::vector<long> m_lbw;
     std::size_t m_cost = std::numeric_limits<std::size_t>::max();
 };
 std::ostream &operator<<(std::ostream &os, const Solution &sol);
