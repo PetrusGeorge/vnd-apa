@@ -278,19 +278,18 @@ std::optional<long> EvalReinsertion(size_t i, size_t j, size_t block_size, long 
     }
 
     auto [lb_w_between, min_shift_between] = s.lbw[i + block_size];
-
+    
     if (shift_between > min_shift_between && shift_after > min_shift_after) {
 
         long lb_delta1 = shift_between * lb_w_between;
-        lb_delta1 -= shift_between * s.lbw[j].first;
+        if(j != s.sequence.size() - 1)
+        {
+            lb_delta1 -= shift_between * s.lbw[j+1].first;
+        }
 
         long lb_delta2 = shift_after * lb_w_after;
 
         if (delta + lb_delta1 + lb_delta2 > best_delta) {
-            std::cout << "\nBlock size: " << block_size << '\n';
-            std::cout << "Shift between: " << shift_between << ", Shift after: " << shift_after << '\n';
-            std::cout << "Delta: " << delta << ", lb delta 1: " << lb_delta1 << ", lb delta 2: " << lb_delta2 << '\n';
-
             return {};
         }
     }
