@@ -29,6 +29,7 @@
         buildInputs = with pkgs; [
           cppcheck
           just
+          watchexec
 
           lldb
         ];

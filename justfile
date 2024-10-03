@@ -32,3 +32,6 @@ check:
 
 lint:
     find src -name '*.cpp' -or -name '*.h' | xargs clang-tidy -p {{builddir}} --fix 
+
+watchcopa:
+    watchexec --emit-events-to=environment -p -- python ../copa-apa.py '$WATCHEXEC_WRITTEN_PATH'
