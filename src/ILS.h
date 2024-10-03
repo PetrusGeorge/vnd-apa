@@ -1,9 +1,12 @@
 #ifndef ILS_H
 #define ILS_H
 
+#include <memory>
+
 #include "Instance.h"
 #include "Solution.h"
+#include "argparse/argparse.hpp"
 
-Solution ILS(int max_iter, int max_iter_ils, int num_threads, const Instance &instance);
+Solution ILS(std::unique_ptr<argparse::ArgumentParser> args, const Instance &instance);
 
 #endif

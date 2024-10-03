@@ -4,9 +4,9 @@
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
-#include <limits>
 #include <ranges>
 #include <utility>
 #include <vector>
@@ -43,7 +43,7 @@ std::ostream &operator<<(std::ostream &os, const Solution &sol) {
 
 void Solution::PrintLBW() {
     std::cout << *this;
-    std::cout << "lbw | min_shift\n";
+    std::cout << "lbw\n";
     for (size_t lbw : m_lbw) {
 
         std::cout << lbw << '\n';
@@ -51,11 +51,13 @@ void Solution::PrintLBW() {
 }
 
 void Solution::ToFile() const {
+    std::filesystem::create_directory("solution");
+    std::ofstream file("solution/" + m_instance.instance_name());
     for (const auto &order : m_sequence | rv::take(m_sequence.size() - 1) | rv::drop(1)) {
-        std::cout << order.id + 1 << ',';
+        file << order.id + 1 << ',';
     }
-    std::cout << m_sequence.back().id + 1 << '\n';
-    std::cout << m_cost << '\n';
+    file << m_sequence.back().id + 1 << '\n';
+    file << m_cost << '\n';
 }
 
 Solution::Solution(const Instance &instance) : m_instance(instance) {}
@@ -158,13 +160,13 @@ void Solution::UpdateLBW() {
     std::vector<long> lbw(m_instance.size() + 1);
 
     if (m_sequence.back().penalty > 0) {
-        lbw.back()= static_cast<long>(m_instance.weight(m_sequence.back()));
+        lbw.back() = static_cast<long>(m_instance.weight(m_sequence.back()));
     } else {
         lbw.back() = 0;
     }
 
     for (long i = static_cast<long>(lbw.size()) - 2; i >= 0; i--) {
-        size_t w = lbw[i + 1];
+        long w = lbw[i + 1];
 
         if (m_sequence[i].penalty > 0) {
             w += static_cast<long>(m_instance.weight(m_sequence[i]));

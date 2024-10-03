@@ -52,8 +52,8 @@ bool GetNextLine(std::ifstream &file, std::string &line) {
     return true;
 }
 
-Instance::Instance(const std::filesystem::path &filename) {
-    std::ifstream file(filename);
+Instance::Instance(const std::filesystem::path &filepath) : m_instance_name(filepath.filename()) {
+    std::ifstream file(filepath);
 
     if (!file.is_open()) {
         throw std::runtime_error("Could not open file");

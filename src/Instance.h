@@ -18,7 +18,7 @@ struct Vertex {
 class Instance {
 
   public:
-    explicit Instance(const std::filesystem::path &filename);
+    explicit Instance(const std::filesystem::path &filepath);
 
     [[nodiscard]] inline std::size_t setup_time(const Vertex &order, const Vertex &order_behind) const {
         return m_setup_times[order_behind.id + 1][order.id];
@@ -45,11 +45,13 @@ class Instance {
     std::size_t CalculateVertex(Vertex &order, const Vertex &order_behind = Vertex::Departure()) const;
 
     [[nodiscard]] inline std::size_t size() const { return m_instance_size; }
+    [[nodiscard]] inline const std::string &instance_name() const { return m_instance_name; }
 
   private:
     void SetVector(const std::string &line, std::vector<std::size_t> &fill_vector) const;
 
     std::size_t m_instance_size = 0;
+    std::string m_instance_name;
     std::vector<std::vector<std::size_t>> m_setup_times;
     std::vector<std::size_t> m_weights;
     std::vector<std::size_t> m_process_times;

@@ -9,6 +9,7 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdio>
+#include <limits>
 #include <mutex>
 #include <thread>
 #include <utility>
@@ -60,7 +61,12 @@ Solution Construction(const Instance &instance) {
     return {std::move(sequence), cost, instance};
 }
 
-Solution ILS(int max_iter, int max_iter_ils, int num_threads, const Instance &instance) {
+Solution ILS(std::unique_ptr<argparse::ArgumentParser> args, const Instance &instance) {
+
+    const int max_iter = args->get<int>("-i");
+    const int max_iter_ils = args->get<int>("-ils");
+    const int num_threads = args->get<int>("-j");
+    bool endless = args->get<bool>("-apa");
 
     std::atomic<int> iter = 0;
     std::mutex mtx;
@@ -68,7 +74,7 @@ Solution ILS(int max_iter, int max_iter_ils, int num_threads, const Instance &in
 
     auto ils_lambda = [&]() {
         while (true) {
-            if (iter++ >= max_iter) {
+            if (iter++ >= max_iter && !endless) {
                 break;
             }
 
@@ -87,28 +93,32 @@ Solution ILS(int max_iter, int max_iter_ils, int num_threads, const Instance &in
             const std::lock_guard<std::mutex> lock(mtx);
             if (best.cost() < best_of_all.cost()) {
                 best_of_all = std::move(best);
+                if (args->get<bool>("-apa")) {
+                    best_of_all.ToFile();
+                }
                 if (best_of_all.cost() == 0) {
                     iter = max_iter + 1;
+                    endless = false;
                     break;
                 }
             }
         }
     };
 
-    if (num_threads > 1) {
-        std::vector<std::thread> threads;
-        threads.reserve(num_threads);
-
-        for (int i = 0; i < num_threads; ++i) {
-            threads.emplace_back(ils_lambda);
-        }
-
-        for (auto &t : threads) {
-            t.join();
-        }
-    } else {
-        // Better debug without spawning a thread
+    if (num_threads == 1) {
         ils_lambda();
+        return best_of_all;
+    }
+
+    std::vector<std::thread> threads;
+    threads.reserve(num_threads);
+
+    for (int i = 0; i < num_threads; ++i) {
+        threads.emplace_back(ils_lambda);
+    }
+
+    for (auto &t : threads) {
+        t.join();
     }
 
     return best_of_all;

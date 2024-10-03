@@ -17,7 +17,22 @@
 
 using std::size_t;
 
-enum class Searchs : std::uint8_t {SWAP,REINSERTION_1,REINSERTION_2,REINSERTION_3,REINSERTION_4,REINSERTION_5,REINSERTION_6,REINSERTION_7,REINSERTION_8,REINSERTION_9,REINSERTION_10,REINSERTION_11,REINSERTION_12,REINSERTION_13};
+enum class Searchs : std::uint8_t {
+    SWAP,
+    REINSERTION_1,
+    REINSERTION_2,
+    REINSERTION_3,
+    REINSERTION_4,
+    REINSERTION_5,
+    REINSERTION_6,
+    REINSERTION_7,
+    REINSERTION_8,
+    REINSERTION_9,
+    REINSERTION_10,
+    REINSERTION_11,
+    REINSERTION_12,
+    REINSERTION_13
+};
 
 inline std::pair<long, size_t> EvalRange(size_t start_time, size_t begin, size_t end, const Vertex &real_behind,
                                          const Solution &s, const Instance &instance) {
@@ -398,7 +413,11 @@ bool Reinsertion(Solution &s, size_t block_size, const Instance &instance) {
     return false;
 }
 void LocalSearch(Solution &s, const Instance &instance) {
-    std::vector searchs = {Searchs::SWAP, Searchs::REINSERTION_1, Searchs::REINSERTION_2, Searchs::REINSERTION_3, Searchs::REINSERTION_4, Searchs::REINSERTION_5, Searchs::REINSERTION_6, Searchs::REINSERTION_7, Searchs::REINSERTION_8,Searchs::REINSERTION_9, Searchs::REINSERTION_10,Searchs::REINSERTION_11, Searchs::REINSERTION_12,Searchs::REINSERTION_13};
+    std::vector searchs = {Searchs::SWAP,           Searchs::REINSERTION_1,  Searchs::REINSERTION_2,
+                           Searchs::REINSERTION_3,  Searchs::REINSERTION_4,  Searchs::REINSERTION_5,
+                           Searchs::REINSERTION_6,  Searchs::REINSERTION_7,  Searchs::REINSERTION_8,
+                           Searchs::REINSERTION_9,  Searchs::REINSERTION_10, Searchs::REINSERTION_11,
+                           Searchs::REINSERTION_12, Searchs::REINSERTION_13};
     while (!searchs.empty()) {
         bool improved = false;
         auto chose = rng::pick_iter(searchs.begin(), searchs.end());
@@ -448,7 +467,11 @@ void LocalSearch(Solution &s, const Instance &instance) {
         }
 
         if (improved) {
-            searchs = {Searchs::SWAP, Searchs::REINSERTION_1, Searchs::REINSERTION_2, Searchs::REINSERTION_3, Searchs::REINSERTION_4, Searchs::REINSERTION_5, Searchs::REINSERTION_6, Searchs::REINSERTION_7, Searchs::REINSERTION_8,Searchs::REINSERTION_9, Searchs::REINSERTION_10,Searchs::REINSERTION_11, Searchs::REINSERTION_12,Searchs::REINSERTION_13};
+            searchs = {Searchs::SWAP,           Searchs::REINSERTION_1,  Searchs::REINSERTION_2,
+                       Searchs::REINSERTION_3,  Searchs::REINSERTION_4,  Searchs::REINSERTION_5,
+                       Searchs::REINSERTION_6,  Searchs::REINSERTION_7,  Searchs::REINSERTION_8,
+                       Searchs::REINSERTION_9,  Searchs::REINSERTION_10, Searchs::REINSERTION_11,
+                       Searchs::REINSERTION_12, Searchs::REINSERTION_13};
             continue;
         }
         searchs.erase(chose);
