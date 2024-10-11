@@ -58,18 +58,8 @@ void Solution::PrintLBW() {
 void Solution::ToFile() const {
     std::filesystem::create_directory("solution");
 
-    auto now = std::chrono::system_clock::now();
-
-    auto in_time_t = std::chrono::system_clock::to_time_t(now);
-    std::stringstream datetime;
-    datetime << std::put_time(std::localtime(&in_time_t), "%Y-%m-%d %X");
-    auto ms = duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
-    datetime << ':' << std::setfill('0') << std::setw(3) << ms.count();
-
-    std::string date = datetime.str();
-    std::replace(date.begin(), date.end(), ' ', '_');
     const std::filesystem::path teste(m_instance.instance_name());
-    std::ofstream file("solution/" + teste.stem().string() + "-" + date + ".txt");
+    std::ofstream file("solution/" + teste.stem().string() + "-" + std::to_string(m_cost) + ".txt");
     for (const auto &order : m_sequence | rv::take(m_sequence.size() - 1) | rv::drop(1)) {
         file << order.id + 1 << ',';
     }

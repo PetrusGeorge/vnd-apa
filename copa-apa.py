@@ -43,7 +43,7 @@ def main(file_path):
         response = send_post_request(url, payload)
         
         print(f"Response Status Code: {response.status_code}")
-        # print(f"Response Body: {response.json()}")
+        print(f"Response Body: {response.json()}")
     except Exception as e:
         print(f"An error occurred: {e}")
 

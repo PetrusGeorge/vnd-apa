@@ -2,6 +2,7 @@
 #include "argparse/argparse.hpp"
 #include <cstdlib>
 #include <iostream>
+#include <limits>
 #include <memory>
 #include <ostream>
 #include <stdexcept>
@@ -35,6 +36,12 @@ std::unique_ptr<argparse::ArgumentParser> Parse(const std::vector<std::string> &
     parser->add_argument("-s", "--seed")
         .help("set random generator seed, only aplied if number of threads is 1")
         .metavar("SEED")
+        .scan<'i', std::size_t>();
+
+    parser->add_argument("-k", "--bks")
+        .help("set best known solution")
+        .metavar("BKS")
+        .default_value(std::numeric_limits<std::size_t>::max())
         .scan<'i', std::size_t>();
 
     parser->add_argument("-apa").help("endless loop").default_value(false).flag();

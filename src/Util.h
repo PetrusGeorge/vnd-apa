@@ -8,7 +8,7 @@
 #include <type_traits>
 
 namespace parameters {
-constexpr double R_MAX = 1;
+constexpr double R_MAX = 0.25;
 }
 
 namespace rng {

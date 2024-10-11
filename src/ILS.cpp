@@ -72,6 +72,7 @@ Solution ILS(std::unique_ptr<argparse::ArgumentParser> args, const Instance &ins
     std::atomic<int> iter = 0;
     std::mutex mtx;
     Solution best_of_all(instance);
+    auto best_of_all_cost = args->get<size_t>("--bks");
 
     auto ils_lambda = [&]() {
         while (true) {
@@ -92,8 +93,9 @@ Solution ILS(std::unique_ptr<argparse::ArgumentParser> args, const Instance &ins
                 s = Pertubation(best, instance);
             }
             const std::lock_guard<std::mutex> lock(mtx);
-            if (best.cost() < best_of_all.cost()) {
+            if (best.cost() < best_of_all_cost) {
                 best_of_all = std::move(best);
+                best_of_all_cost = best_of_all.cost();
                 if (args->get<bool>("-apa")) {
                     best_of_all.ToFile();
                 }
