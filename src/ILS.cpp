@@ -90,7 +90,7 @@ Solution ILS(std::unique_ptr<argparse::ArgumentParser> args, const Instance &ins
                     iter_ils = -1;
                 }
 
-                s = Pertubation(best, instance);
+                s = Pertubation(best);
             }
             const std::lock_guard<std::mutex> lock(mtx);
             if (best.cost() < best_of_all_cost) {

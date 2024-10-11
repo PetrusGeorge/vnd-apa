@@ -4,6 +4,7 @@
 #include "Util.h"
 
 #include <algorithm>
+#include <array>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
@@ -12,6 +13,7 @@
 #include <limits>
 #include <optional>
 #include <ostream>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -25,6 +27,7 @@ struct MoveInfo {
 
 enum class Searchs : std::uint8_t {
     SWAP,
+    REVERSE,
     REINSERTION_1,
     REINSERTION_2,
     REINSERTION_3,
@@ -162,7 +165,7 @@ inline std::optional<long> EvalSwapAdjacent(size_t i, long best_delta, const Sol
     return delta;
 }
 
-bool IsCorrect(long best_delta, size_t i, size_t j,const Solution &s, int block_size = -1) {
+bool IsCorrect(long best_delta, size_t i, size_t j, const Solution &s, int block_size = -1) {
     const size_t estimated = best_delta + s.cost();
 
     Solution s_b = s;
@@ -200,7 +203,8 @@ bool IsWorse(long best_delta, size_t i, size_t j, const Solution &s, int block_s
     return true;
 }
 
-void SaveIfBetter(MoveInfo &best, std::tuple<std::optional<long>,size_t,size_t> move, const Solution& s, size_t block_size = -1){
+void SaveIfBetter(MoveInfo &best, std::tuple<std::optional<long>, size_t, size_t> move, const Solution &s,
+                  size_t block_size = -1) {
     auto [delta, i, j] = move;
     if (!delta) {
         assert(IsWorse(best.delta, i, j, s, block_size));
@@ -376,6 +380,10 @@ std::optional<long> EvalReinsertionBack(size_t i, size_t j, size_t block_size, l
 
 bool Reinsertion(Solution &s, size_t block_size, const Instance &instance) {
 
+    if (block_size > instance.size()) {
+        return false;
+    }
+
     MoveInfo best;
 
     for (size_t i = 1; i < s.sequence.size() - block_size; i++) {
@@ -402,63 +410,44 @@ bool Reinsertion(Solution &s, size_t block_size, const Instance &instance) {
     return false;
 }
 
-// bool Reverse(Solution &s, const Instance &instance) {
+bool Reverse(Solution &s) {
+    MoveInfo best;
+    const size_t cost_before = s.cost();
 
-//     long best_delta = 0;
-//     size_t best_i = std::numeric_limits<size_t>::max();
-//     size_t best_j = std::numeric_limits<size_t>::max();
+    for (size_t i = 1; i < s.sequence.size() - 1; i++) {
+        for (size_t j = i + 2; j < s.sequence.size(); j++) {
+            s.ApplyReverse(i, j);
+            size_t delta = s.cost() - cost_before;
+            SaveIfBetter(best, {delta, i, j}, s);
+            s.ApplyReverse(i, j);
+        }
+    }
 
-//     auto save_if_better = [&](std::optional<long> delta, size_t i, size_t j) {
-//         if (!delta) {
-//             assert(IsWorse(best_delta, i, j, s, block_size));
-//             return;
-//         }
+    if (best.delta < 0) {
+        s.ApplyReverse(best.i, best.j);
+        return true;
+    }
 
-//         assert(IsCorrect(*delta, i, j, s, block_size));
-
-//         if (*delta < best_delta) {
-//             best_i = i;
-//             best_j = j;
-//             best_delta = *delta;
-//         }
-//     };
-
-//     for (size_t i = 1; i < s.sequence.size() - block_size; i++) {
-//         for (size_t j = i + block_size; j < s.sequence.size(); j++) {
-//             const std::optional<long> delta = EvalReinsertion(i, j, block_size, best_delta, s, instance);
-
-//             save_if_better(delta, i, j);
-//         }
-//     }
-
-//     for (size_t i = 2; i < s.sequence.size() - block_size; i++) {
-//         for (size_t j = 1; j < i; j++) {
-//             const std::optional<long> delta = EvalReinsertionBack(i, j, block_size, best_delta, s, instance);
-
-//             save_if_better(delta, i, j);
-//         }
-//     }
-
-//     if (best_delta < 0) {
-//         s.ApplyReinsertion(best_i, best_j, block_size);
-//         return true;
-//     }
-
-//     return false;
-// }
+    return false;
+}
 
 void LocalSearch(Solution &s, const Instance &instance) {
-    std::vector searchs = {Searchs::SWAP,           Searchs::REINSERTION_1,  Searchs::REINSERTION_2,
-                           Searchs::REINSERTION_3,  Searchs::REINSERTION_4,  Searchs::REINSERTION_5,
-                           Searchs::REINSERTION_6,  Searchs::REINSERTION_7,  Searchs::REINSERTION_8,
-                           Searchs::REINSERTION_9,  Searchs::REINSERTION_10, Searchs::REINSERTION_11,
-                           Searchs::REINSERTION_12, Searchs::REINSERTION_13};
+    //NOTE: REVERSE is not used
+    std::array fixed = {Searchs::SWAP,           Searchs::REINSERTION_1,  Searchs::REINSERTION_2,
+                        Searchs::REINSERTION_3,  Searchs::REINSERTION_4,  Searchs::REINSERTION_5,
+                        Searchs::REINSERTION_6,  Searchs::REINSERTION_7,  Searchs::REINSERTION_8,
+                        Searchs::REINSERTION_9,  Searchs::REINSERTION_10, Searchs::REINSERTION_11,
+                        Searchs::REINSERTION_12, Searchs::REINSERTION_13};
+    std::vector<Searchs> searchs = {fixed.begin(), fixed.end()};
     while (!searchs.empty()) {
         bool improved = false;
         auto chose = rng::pick_iter(searchs.begin(), searchs.end());
         switch (*chose) {
         case Searchs::SWAP:
             improved = Swap(s, instance);
+            break;
+        case Searchs::REVERSE:
+            improved = Reverse(s);
             break;
         case Searchs::REINSERTION_1:
             improved = Reinsertion(s, 1, instance);
@@ -502,18 +491,14 @@ void LocalSearch(Solution &s, const Instance &instance) {
         }
 
         if (improved) {
-            searchs = {Searchs::SWAP,           Searchs::REINSERTION_1,  Searchs::REINSERTION_2,
-                       Searchs::REINSERTION_3,  Searchs::REINSERTION_4,  Searchs::REINSERTION_5,
-                       Searchs::REINSERTION_6,  Searchs::REINSERTION_7,  Searchs::REINSERTION_8,
-                       Searchs::REINSERTION_9,  Searchs::REINSERTION_10, Searchs::REINSERTION_11,
-                       Searchs::REINSERTION_12, Searchs::REINSERTION_13};
+            searchs = {fixed.begin(), fixed.end()};
             continue;
         }
         searchs.erase(chose);
     }
 }
 
-[[nodiscard]] Solution Pertubation(Solution best_copy, const Instance & /*instance*/) {
+[[nodiscard]] Solution Pertubation(Solution best_copy) {
 
     long block_size_i = 0;
     long block_size_j = 0;

@@ -5,6 +5,6 @@
 #include "Solution.h"
 
 void LocalSearch(Solution &s, const Instance &instance);
-Solution Pertubation(Solution best, const Instance &instance);
+Solution Pertubation(Solution best);
 
 #endif // !LOCAL_SEARCH_H
