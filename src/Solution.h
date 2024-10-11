@@ -26,6 +26,7 @@ class Solution {
 
     void ApplySwap(std::size_t i, std::size_t j);
     void ApplyReinsertion(std::size_t i, std::size_t j, std::size_t block_size);
+    void ApplyReverse(long i, long j);
     void ApplyDoubleBridge(long i, long j, long block_size_i, long block_size_j);
     void ToFile() const;
 

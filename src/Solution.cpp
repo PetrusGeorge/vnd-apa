@@ -154,6 +154,12 @@ void Solution::ApplyReinsertion(size_t i, size_t j, size_t block_size) {
     RecalculateCost();
 }
 
+void Solution::ApplyReverse(long i, long j) {
+    assert(i > 0 || j > i);
+    std::reverse(m_sequence.begin() + i, m_sequence.begin() + j);
+    RecalculateCost();
+}
+
 void Solution::ApplyDoubleBridge(long i, long j, long block_size_i, long block_size_j) {
 
     std::rotate(m_sequence.begin() + i, m_sequence.begin() + j, m_sequence.begin() + j + block_size_j);

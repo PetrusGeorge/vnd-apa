@@ -17,6 +17,12 @@
 
 using std::size_t;
 
+struct MoveInfo {
+    long delta = 0;
+    size_t i = std::numeric_limits<size_t>::max();
+    size_t j = std::numeric_limits<size_t>::max();
+};
+
 enum class Searchs : std::uint8_t {
     SWAP,
     REINSERTION_1,
@@ -156,21 +162,22 @@ inline std::optional<long> EvalSwapAdjacent(size_t i, long best_delta, const Sol
     return delta;
 }
 
-bool IsCorrect(long delta, size_t i, size_t j, Solution s, int block_size = -1) {
-    const size_t estimated = delta + s.cost();
+bool IsCorrect(long best_delta, size_t i, size_t j,const Solution &s, int block_size = -1) {
+    const size_t estimated = best_delta + s.cost();
 
+    Solution s_b = s;
     if (block_size == -1) {
-        s.ApplySwap(i, j);
+        s_b.ApplySwap(i, j);
     } else {
-        s.ApplyReinsertion(i, j, block_size);
+        s_b.ApplyReinsertion(i, j, block_size);
     }
-    if (s.cost() != estimated) {
+    if (s_b.cost() != estimated) {
         std::cerr << s << '\n';
-        std::cerr << "Correct: " << s.cost() << ", Received: " << estimated << '\n';
+        std::cerr << "Correct: " << s_b.cost() << ", Received: " << estimated << '\n';
         std::cerr << "(i,j): " << "(" << i << "," << j << ")\n";
     }
 
-    return s.DebugCost() == estimated;
+    return s_b.DebugCost() == estimated;
 }
 
 bool IsWorse(long best_delta, size_t i, size_t j, const Solution &s, int block_size = -1) {
@@ -193,43 +200,42 @@ bool IsWorse(long best_delta, size_t i, size_t j, const Solution &s, int block_s
     return true;
 }
 
+void SaveIfBetter(MoveInfo &best, std::tuple<std::optional<long>,size_t,size_t> move, const Solution& s, size_t block_size = -1){
+    auto [delta, i, j] = move;
+    if (!delta) {
+        assert(IsWorse(best.delta, i, j, s, block_size));
+        return;
+    }
+
+    assert(IsCorrect(*delta, i, j, s, block_size));
+
+    if (*delta < best.delta) {
+        best.i = i;
+        best.j = j;
+        best.delta = *delta;
+    }
+}
+
 bool Swap(Solution &s, const Instance &instance) {
 
-    long best_delta = 0;
-    size_t best_i = std::numeric_limits<size_t>::max();
-    size_t best_j = std::numeric_limits<size_t>::max();
-
-    auto save_if_better = [&](std::optional<long> delta, size_t i, size_t j) {
-        if (!delta) {
-            assert(IsWorse(best_delta, i, j, s));
-            return;
-        }
-
-        assert(IsCorrect(*delta, i, j, s));
-
-        if (*delta < best_delta) {
-            best_i = i;
-            best_j = j;
-            best_delta = *delta;
-        }
-    };
+    MoveInfo best;
 
     for (size_t i = 1; i < s.sequence.size() - 1; i++) {
         for (size_t j = i + 2; j < s.sequence.size(); j++) {
-            const std::optional<long> delta = EvalSwap(i, j, best_delta, s, instance);
+            const std::optional<long> delta = EvalSwap(i, j, best.delta, s, instance);
 
-            save_if_better(delta, i, j);
+            SaveIfBetter(best, {delta, i, j}, s);
         }
     }
 
     for (size_t i = 1; i < s.sequence.size() - 1; i++) {
-        const std::optional<long> delta = EvalSwapAdjacent(i, best_delta, s, instance);
+        const std::optional<long> delta = EvalSwapAdjacent(i, best.delta, s, instance);
 
-        save_if_better(delta, i, i + 1);
+        SaveIfBetter(best, {delta, i, i + 1}, s);
     }
 
-    if (best_delta < 0) {
-        s.ApplySwap(best_i, best_j);
+    if (best.delta < 0) {
+        s.ApplySwap(best.i, best.j);
         return true;
     }
 
@@ -370,48 +376,77 @@ std::optional<long> EvalReinsertionBack(size_t i, size_t j, size_t block_size, l
 
 bool Reinsertion(Solution &s, size_t block_size, const Instance &instance) {
 
-    long best_delta = 0;
-    size_t best_i = std::numeric_limits<size_t>::max();
-    size_t best_j = std::numeric_limits<size_t>::max();
-
-    auto save_if_better = [&](std::optional<long> delta, size_t i, size_t j) {
-        if (!delta) {
-            assert(IsWorse(best_delta, i, j, s, block_size));
-            return;
-        }
-
-        assert(IsCorrect(*delta, i, j, s, block_size));
-
-        if (*delta < best_delta) {
-            best_i = i;
-            best_j = j;
-            best_delta = *delta;
-        }
-    };
+    MoveInfo best;
 
     for (size_t i = 1; i < s.sequence.size() - block_size; i++) {
         for (size_t j = i + block_size; j < s.sequence.size(); j++) {
-            const std::optional<long> delta = EvalReinsertion(i, j, block_size, best_delta, s, instance);
+            const std::optional<long> delta = EvalReinsertion(i, j, block_size, best.delta, s, instance);
 
-            save_if_better(delta, i, j);
+            SaveIfBetter(best, {delta, i, j}, s, block_size);
         }
     }
 
     for (size_t i = 2; i < s.sequence.size() - block_size; i++) {
         for (size_t j = 1; j < i; j++) {
-            const std::optional<long> delta = EvalReinsertionBack(i, j, block_size, best_delta, s, instance);
+            const std::optional<long> delta = EvalReinsertionBack(i, j, block_size, best.delta, s, instance);
 
-            save_if_better(delta, i, j);
+            SaveIfBetter(best, {delta, i, j}, s, block_size);
         }
     }
 
-    if (best_delta < 0) {
-        s.ApplyReinsertion(best_i, best_j, block_size);
+    if (best.delta < 0) {
+        s.ApplyReinsertion(best.i, best.j, block_size);
         return true;
     }
 
     return false;
 }
+
+// bool Reverse(Solution &s, const Instance &instance) {
+
+//     long best_delta = 0;
+//     size_t best_i = std::numeric_limits<size_t>::max();
+//     size_t best_j = std::numeric_limits<size_t>::max();
+
+//     auto save_if_better = [&](std::optional<long> delta, size_t i, size_t j) {
+//         if (!delta) {
+//             assert(IsWorse(best_delta, i, j, s, block_size));
+//             return;
+//         }
+
+//         assert(IsCorrect(*delta, i, j, s, block_size));
+
+//         if (*delta < best_delta) {
+//             best_i = i;
+//             best_j = j;
+//             best_delta = *delta;
+//         }
+//     };
+
+//     for (size_t i = 1; i < s.sequence.size() - block_size; i++) {
+//         for (size_t j = i + block_size; j < s.sequence.size(); j++) {
+//             const std::optional<long> delta = EvalReinsertion(i, j, block_size, best_delta, s, instance);
+
+//             save_if_better(delta, i, j);
+//         }
+//     }
+
+//     for (size_t i = 2; i < s.sequence.size() - block_size; i++) {
+//         for (size_t j = 1; j < i; j++) {
+//             const std::optional<long> delta = EvalReinsertionBack(i, j, block_size, best_delta, s, instance);
+
+//             save_if_better(delta, i, j);
+//         }
+//     }
+
+//     if (best_delta < 0) {
+//         s.ApplyReinsertion(best_i, best_j, block_size);
+//         return true;
+//     }
+
+//     return false;
+// }
+
 void LocalSearch(Solution &s, const Instance &instance) {
     std::vector searchs = {Searchs::SWAP,           Searchs::REINSERTION_1,  Searchs::REINSERTION_2,
                            Searchs::REINSERTION_3,  Searchs::REINSERTION_4,  Searchs::REINSERTION_5,
