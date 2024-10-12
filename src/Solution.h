@@ -35,6 +35,7 @@ class Solution {
     const std::vector<long> &lbw = m_lbw;
     std::size_t DebugCost();
     void PrintLBW();
+    friend std::ostream &operator<<(std::ostream &os, const Solution &sol);
 
   private:
     void RecalculateCost();

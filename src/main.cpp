@@ -45,5 +45,4 @@ int main(int argc, char *argv[]) {
 
     std::cout << result << '\n';
     std::cout << "Time: " << total_time << '\n';
-    result.ToFile();
 }

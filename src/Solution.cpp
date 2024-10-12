@@ -40,6 +40,14 @@ std::ostream &operator<<(std::ostream &os, const Solution &sol) {
            << std::setw(penalty_width) << order.penalty << '\n';
     }
 
+    Vertex last = sol.sequence.back();
+    for (auto id : sol.m_instance.zero_weight_nodes()) {
+        Vertex calc = {static_cast<long>(id), 0, 0};
+        sol.m_instance.CalculateVertex(calc, last);
+        os << std::setw(id_width) << calc.id << std::setw(finish_time_width) << calc.finish_time
+           << std::setw(penalty_width) << calc.penalty << '\n';
+    }
+
     os << "\nFinal cost: " << sol.cost() << '\n';
     return os;
 }
@@ -60,6 +68,9 @@ void Solution::ToFile() const {
     std::ofstream file("solution/" + teste.stem().string() + "-" + std::to_string(m_cost) + ".txt");
     for (const auto &order : m_sequence | rv::take(m_sequence.size() - 1) | rv::drop(1)) {
         file << order.id + 1 << ',';
+    }
+    for (auto id : m_instance.zero_weight_nodes()) {
+        file << id + 1 << ',';
     }
     file << m_sequence.back().id + 1 << '\n';
     file << m_cost << '\n';

@@ -25,12 +25,12 @@ void Instance::SetVector(const std::string &line, vector<std::size_t> &fill_vect
     std::stringstream iss(line);
     size_t number = std::numeric_limits<size_t>::max();
 
-    fill_vector.reserve(m_instance_size);
+    fill_vector.reserve(m_instance_real_size);
     while (iss >> number) {
         fill_vector.emplace_back(number);
     }
 
-    if (fill_vector.size() != m_instance_size) {
+    if (fill_vector.size() != m_instance_real_size) {
         throw std::runtime_error("Failed to correctly set a vector");
     }
 }
@@ -62,7 +62,7 @@ Instance::Instance(const std::filesystem::path &filepath) : m_instance_name(file
     // Read number of jobs
     std::string line{};
     std::getline(file, line);
-    m_instance_size = std::stoi(line);
+    m_instance_real_size = std::stoi(line);
 
     // The order matters
     const vector<std::reference_wrapper<vector<size_t>>> vecs = {m_process_times, m_deadlines, m_weights};
@@ -72,13 +72,14 @@ Instance::Instance(const std::filesystem::path &filepath) : m_instance_name(file
         SetVector(line, vec);
     }
 
-    for(auto weight : m_weights){
-        if(weight == 0){
-            m_instance_size_zero_weighted++;
+    for(size_t i = 0; i < m_weights.size(); i++){
+        if(m_weights[i] == 0){
+            m_zero_weight_nodes.emplace_back(i);
         }
     }
+    m_instance_size = m_instance_real_size - m_zero_weight_nodes.size();
 
-    m_setup_times.reserve(m_instance_size + 1);
+    m_setup_times.reserve(m_instance_real_size + 1);
 
     // Read setup times
     while (GetNextLine(file, line)) {
@@ -86,10 +87,9 @@ Instance::Instance(const std::filesystem::path &filepath) : m_instance_name(file
         SetVector(line, m_setup_times.back());
     }
 
-    if (m_setup_times.size() != m_instance_size + 1) {
+    if (m_setup_times.size() != m_instance_real_size + 1) {
         throw std::runtime_error("Failed to correctly set a setup times");
     }
-    //m_instance_size -= m_instance_size_zero_weighted;
 }
 
 std::pair<size_t, size_t> Instance::EvalVertexWithStart(const Vertex &order, const Vertex &order_behind,

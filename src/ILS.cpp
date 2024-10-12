@@ -48,12 +48,9 @@ Solution Construction(const Instance &instance) {
     size_t cost = 0;
 
     vector<Vertex> CL;
-    vector<Vertex> zero_weight;
-    CL.reserve(instance.size() - instance.zero_size());
-    zero_weight.reserve(instance.zero_size());
-    for (size_t i = 0; i < instance.size(); i++) {
-        if(instance.weight({static_cast<long>(i),0,0}) == 0){
-            zero_weight.emplace_back(i,0,0);
+    CL.reserve(instance.size());
+    for (size_t i = 0; i < instance.real_size(); i++) {
+        if (instance.weight({static_cast<long>(i), 0, 0}) == 0) {
             continue;
         }
         CL.emplace_back(i, 0, 0);
@@ -63,10 +60,6 @@ Solution Construction(const Instance &instance) {
     while (!CL.empty()) {
         sequence.emplace_back(ChooseBestVertex(CL, sequence.back(), instance));
         cost += sequence.back().penalty;
-    }
-    for(auto& remaining : zero_weight){
-        instance.CalculateVertex(remaining, sequence.back());
-        sequence.emplace_back(remaining);
     }
 
     return {std::move(sequence), cost, instance};
@@ -98,8 +91,8 @@ Solution ILS(std::unique_ptr<argparse::ArgumentParser> args, const Instance &ins
             double time_construction = 0;
             Solution s = benchmark::timeFuncInvocation(Construction, time_construction, instance);
             // This doesn't work correctly with multithreading, but this variable should never be used in this case
-            mean_time_construction += time_construction/max_iter;
-            mean_cost_construction += s.cost()/max_iter;
+            mean_time_construction += time_construction / max_iter;
+            mean_cost_construction += s.cost() / max_iter;
 
             for (int iter_ils = 0; iter_ils < max_iter_ils; iter_ils++) {
                 LocalSearch(s, instance);
@@ -129,7 +122,7 @@ Solution ILS(std::unique_ptr<argparse::ArgumentParser> args, const Instance &ins
 
     if (num_threads == 1) {
         ils_lambda();
-        if(benchmark){
+        if (benchmark) {
             std::cout << "Construction mean time: " << mean_time_construction << '\n';
             std::cout << "Construction mean value: " << mean_cost_construction << '\n';
         }
