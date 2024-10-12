@@ -30,6 +30,7 @@
           cppcheck
           just
           watchexec
+          python312Packages.pandas
 
           lldb
         ];
