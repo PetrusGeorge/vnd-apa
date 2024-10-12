@@ -72,6 +72,12 @@ Instance::Instance(const std::filesystem::path &filepath) : m_instance_name(file
         SetVector(line, vec);
     }
 
+    for(auto weight : m_weights){
+        if(weight == 0){
+            m_instance_size_zero_weighted++;
+        }
+    }
+
     m_setup_times.reserve(m_instance_size + 1);
 
     // Read setup times
@@ -83,6 +89,7 @@ Instance::Instance(const std::filesystem::path &filepath) : m_instance_name(file
     if (m_setup_times.size() != m_instance_size + 1) {
         throw std::runtime_error("Failed to correctly set a setup times");
     }
+    //m_instance_size -= m_instance_size_zero_weighted;
 }
 
 std::pair<size_t, size_t> Instance::EvalVertexWithStart(const Vertex &order, const Vertex &order_behind,

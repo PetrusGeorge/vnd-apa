@@ -46,6 +46,8 @@ std::unique_ptr<argparse::ArgumentParser> Parse(const std::vector<std::string> &
 
     parser->add_argument("-apa").help("endless loop").default_value(false).flag();
 
+    parser->add_argument("--benchmark").help("benchmark utils").default_value(false).flag();
+
     try {
         parser->parse_args(args);
     } catch (const std::runtime_error &err) {

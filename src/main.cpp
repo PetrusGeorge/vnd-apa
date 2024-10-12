@@ -32,9 +32,18 @@ int main(int argc, char *argv[]) {
             std::cerr << "Warning: seed was ignored because multi threading is active\n";
         }
     }
+    
+    if (args->get<bool>("--benchmark")) {
+        if (args->get<int>("-j") != 1) {
+            std::cerr << "Benchmark have to be done with single thread\n";
+            return 1;
+        }
+    }
 
-    const Solution result = ILS(std::move(args), instance);
+    double total_time = 0;
+    const Solution result = benchmark::timeFuncInvocation(ILS, total_time, std::move(args), instance);
 
     std::cout << result << '\n';
+    std::cout << "Time: " << total_time << '\n';
     result.ToFile();
 }

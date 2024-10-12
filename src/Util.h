@@ -6,9 +6,36 @@
 #include <random>
 #include <stdexcept>
 #include <type_traits>
+#include <chrono>
 
 namespace parameters {
 constexpr double R_MAX = 0.25;
+}
+namespace benchmark {
+
+    inline double UpTime(){
+        const static thread_local auto start_time = std::chrono::high_resolution_clock::now();
+        auto now = std::chrono::high_resolution_clock::now();
+
+        return static_cast<double>(std::chrono::duration_cast<std::chrono::microseconds>( now - start_time ).count())/1e6;
+    }
+    const auto timeFuncInvocation = 
+    [](auto&& func, double& value, auto&&... params) {
+        // Get time before function invocation
+        const auto start = std::chrono::high_resolution_clock::now();
+
+        // Function invocation using perfect forwarding
+        auto result = std::forward<decltype(func)>(func)(std::forward<decltype(params)>(params)...);
+
+        // Get time after function invocation
+        const auto stop = std::chrono::high_resolution_clock::now();
+
+        // Output the duration
+        std::chrono::duration<double> duration = stop - start;
+        value = duration.count();
+        // Return the result of the function invocation
+        return result;
+    };
 }
 
 namespace rng {

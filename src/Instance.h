@@ -45,12 +45,14 @@ class Instance {
     std::size_t CalculateVertex(Vertex &order, const Vertex &order_behind = Vertex::Departure()) const;
 
     [[nodiscard]] inline std::size_t size() const { return m_instance_size; }
+    [[nodiscard]] inline std::size_t zero_size() const { return m_instance_size_zero_weighted; }
     [[nodiscard]] inline const std::string &instance_name() const { return m_instance_name; }
 
   private:
     void SetVector(const std::string &line, std::vector<std::size_t> &fill_vector) const;
 
     std::size_t m_instance_size = 0;
+    std::size_t m_instance_size_zero_weighted = 0;
     std::string m_instance_name;
     std::vector<std::vector<std::size_t>> m_setup_times;
     std::vector<std::size_t> m_weights;
