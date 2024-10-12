@@ -66,13 +66,13 @@ void Solution::ToFile() const {
 
     const std::filesystem::path teste(m_instance.instance_name());
     std::ofstream file("solution/" + teste.stem().string() + "-" + std::to_string(m_cost) + ".txt");
-    for (const auto &order : m_sequence | rv::take(m_sequence.size() - 1) | rv::drop(1)) {
+    for (const auto &order : m_sequence | rv::drop(1)) {
         file << order.id + 1 << ',';
     }
-    for (auto id : m_instance.zero_weight_nodes()) {
+    for (auto id : m_instance.zero_weight_nodes() | rv::take(m_sequence.size() - 1)) {
         file << id + 1 << ',';
     }
-    file << m_sequence.back().id + 1 << '\n';
+    file << m_instance.zero_weight_nodes().back() + 1 << '\n';
     file << m_cost << '\n';
 }
 
