@@ -69,7 +69,7 @@ void Solution::ToFile() const {
     for (const auto &order : m_sequence | rv::drop(1)) {
         file << order.id + 1 << ',';
     }
-    for (auto id : m_instance.zero_weight_nodes() | rv::take(m_sequence.size() - 1)) {
+    for (auto id : m_instance.zero_weight_nodes() | rv::take(m_instance.zero_weight_nodes().size() - 1)) {
         file << id + 1 << ',';
     }
     file << m_instance.zero_weight_nodes().back() + 1 << '\n';
